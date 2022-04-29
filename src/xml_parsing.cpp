@@ -133,7 +133,7 @@ void XMLParser::Pimpl::loadDocImpl(tinyxml2::XMLDocument* doc, bool add_includes
   if (doc->Error())
   {
     char buffer[200];
-    sprintf(buffer, "Error parsing the XML: %s", doc->ErrorName());
+    sprintf(buffer, "Error parsing the XML: %s", doc->ErrorStr());
     throw RuntimeError(buffer);
   }
 
@@ -239,7 +239,7 @@ void VerifyXML(const std::string& xml_text,
   if (xml_error)
   {
     char buffer[200];
-    sprintf(buffer, "Error parsing the XML: %s", doc.ErrorName());
+    sprintf(buffer, "Error parsing the XML: %s", doc.ErrorStr());
     throw RuntimeError(buffer);
   }
 
