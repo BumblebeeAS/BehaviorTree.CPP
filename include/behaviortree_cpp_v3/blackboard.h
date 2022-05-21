@@ -155,12 +155,13 @@ class Blackboard
             if( locked_type && *locked_type != typeid(T) && *locked_type != temp.type() )
             {
                 bool mismatching = true;
+                Any any_from_string;
                 if( std::is_constructible<StringView, T>::value )
                 {
                     Any any_from_string;
                     try {
                         any_from_string = port_info.parseString( value );
-                    } catch (std::runtime_error) {
+                    } catch (const BT::RuntimeError&) {
                         goto mismatch;
                     }
 
