@@ -168,7 +168,6 @@ void XMLParser::Pimpl::loadDocImpl(tinyxml2::XMLDocument* doc, bool add_includes
 #elif defined USING_ROS2
         ros_pkg_path =
             ament_index_cpp::get_package_share_directory(ros_pkg_relative_path);
-        file_path = filesystem::path(ros_pkg_path) / file_path;
 #else
         throw RuntimeError("Using attribute [ros_pkg] in <include>, but this "
                            "library was "
@@ -177,6 +176,7 @@ void XMLParser::Pimpl::loadDocImpl(tinyxml2::XMLDocument* doc, bool add_includes
                            "using "
                            "catkin");
 #endif
+        file_path = filesystem::path(ros_pkg_path) / file_path;
       }
     }
 
