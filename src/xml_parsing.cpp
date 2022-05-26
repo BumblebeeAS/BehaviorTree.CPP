@@ -169,14 +169,15 @@ void XMLParser::Pimpl::loadDocImpl(BT_TinyXML2::XMLDocument* doc, bool add_inclu
             {
                 std::string ros_pkg_path;
 #ifdef USING_ROS
-               ros_pkg_path = ros::package::getPath(ros_pkg_relative_path);
+                ros_pkg_path = ros::package::getPath(ros_pkg_relative_path);
 #elif defined USING_ROS2
-               ros_pkg_path = ament_index_cpp::get_package_share_directory(ros_pkg_relative_path);
-               file_path = filesystem::path( ros_pkg_path ) / file_path;
+                ros_pkg_path = ament_index_cpp::get_package_share_directory(ros_pkg_relative_path);
+                file_path = filesystem::path( ros_pkg_path ) / file_path;
 #else
-               throw RuntimeError("Using attribute [ros_pkg] in <include>, but this library was compiled "
-                                  "without ROS support. Recompile the BehaviorTree.CPP using catkin");
+                throw RuntimeError("Using attribute [ros_pkg] in <include>, but this library was compiled "
+                                   "without ROS support. Recompile the BehaviorTree.CPP using catkin");
 #endif
+                file_path = filesystem::path( ros_pkg_path ) / file_path;
             }
         }
 
