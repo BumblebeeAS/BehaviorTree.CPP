@@ -28,6 +28,12 @@ NodeStatus ReactiveFallback::tick()
     {
       setStatus(NodeStatus::RUNNING);
     }
+    
+    if (current_child_node->registrationName() == "Log")
+    {
+      failure_count++;
+      continue;
+    }
 
     switch (child_status)
     {

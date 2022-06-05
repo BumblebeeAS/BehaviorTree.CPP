@@ -37,6 +37,12 @@ NodeStatus SequenceWithMemory::tick()
     {
       setStatus(NodeStatus::RUNNING);
     }
+    
+    if (current_child_node->registrationName() == "Log")
+    {
+      current_child_idx_++;
+      continue;
+    }
 
     switch (child_status)
     {

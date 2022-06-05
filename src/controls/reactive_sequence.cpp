@@ -29,6 +29,12 @@ NodeStatus ReactiveSequence::tick()
     {
       setStatus(NodeStatus::RUNNING);
     }
+    
+    if (current_child_node->registrationName() == "Log")
+    {
+      success_count++;
+      continue;
+    }
 
     switch (child_status)
     {
