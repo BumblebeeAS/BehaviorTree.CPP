@@ -55,15 +55,18 @@ NodeStatus ParallelNode::tick()
 
     size_t success_childred_num = 0;
     size_t failure_childred_num = 0;
+    size_t log_childred_num = std::count_if(children_nodes_.begin(), children_nodes_.end(), [](const auto child_node) {
+        return child_node->registrationName() == "Log";
+    });
 
     const size_t children_count = children_nodes_.size();
 
-    if( children_count < success_threshold_)
+    if( children_count - log_childred_num < success_threshold_)
     {
         throw LogicError("Number of children is less than threshold. Can never succeed.");
     }
 
-    if( children_count < failure_threshold_)
+    if( children_count - log_childred_num < failure_threshold_)
     {
         throw LogicError("Number of children is less than threshold. Can never fail.");
     }
@@ -82,6 +85,16 @@ NodeStatus ParallelNode::tick()
         }
         else {
             child_status = child_node->executeTick();
+        }
+
+        if (child_node->registrationName() == "Log")
+        {
+            if(!in_skip_list)
+            {
+                skip_list_.insert(i);
+            }
+
+            continue;
         }
 
         switch (child_status)
@@ -112,7 +125,7 @@ NodeStatus ParallelNode::tick()
                 
                 // It fails if it is not possible to succeed anymore or if 
                 // number of failures are equal to failure_threshold_
-                if ((failure_childred_num > children_count - success_threshold_)
+                if ((failure_childred_num > children_count - log_childred_num - success_threshold_)
                     || (failure_childred_num == failure_threshold_))
                 {
                     skip_list_.clear();

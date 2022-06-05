@@ -34,6 +34,12 @@ NodeStatus FallbackNode::tick()
         TreeNode* current_child_node = children_nodes_[current_child_idx_];
         const NodeStatus child_status = current_child_node->executeTick();
 
+        if (current_child_node->registrationName() == "Log")
+        {
+            current_child_idx_++;
+            continue;
+        }
+
         switch (child_status)
         {
             case NodeStatus::RUNNING:
