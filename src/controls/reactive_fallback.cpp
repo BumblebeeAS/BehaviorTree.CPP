@@ -23,6 +23,12 @@ NodeStatus ReactiveFallback::tick()
     TreeNode* current_child_node = children_nodes_[index];
     const NodeStatus child_status = current_child_node->executeTick();
 
+    if (current_child_node->registrationName() == "Log")
+    {
+      failure_count++;
+      continue;
+    }
+
     switch (child_status)
     {
       case NodeStatus::RUNNING: {
