@@ -99,6 +99,9 @@ std::vector<int> convertFromString<std::vector<int>>(StringView str);
 template <> // Real numbers separated by the characted ";"
 std::vector<double> convertFromString<std::vector<double>>(StringView str);
 
+template <> // Real numbers separated by the character ";"
+std::vector<int16_t> convertFromString<std::vector<int16_t>>(StringView str);
+
 template <> // This recognizes either 0/1, true/false, TRUE/FALSE
 bool convertFromString<bool>(StringView str);
 

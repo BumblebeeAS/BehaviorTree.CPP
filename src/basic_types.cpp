@@ -163,6 +163,20 @@ std::vector<int> convertFromString<std::vector<int>>(StringView str)
 }
 
 template <>
+std::vector<int16_t> convertFromString<std::vector<int16_t>>(StringView str)
+{
+    auto parts = splitString(str, ';');
+    std::vector<int16_t> output;
+    output.reserve( parts.size() );
+    for(const StringView& part: parts)
+    {
+        char* end;
+        output.push_back( std::strtol( part.data(), &end, 10 ) );
+    }
+    return output;
+}
+
+template <>
 std::vector<double> convertFromString<std::vector<double>>(StringView str)
 {
     auto parts = splitString(str, ';');
