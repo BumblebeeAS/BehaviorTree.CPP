@@ -92,9 +92,9 @@ public:
   struct Subtree
   {
     using Ptr = std::shared_ptr<Subtree>;
-    uint16_t uid;
     std::vector<TreeNode::Ptr> nodes;
     Blackboard::Ptr blackboard;
+    std::string instance_name;
   };
 
   std::vector<Subtree::Ptr> subtrees;
@@ -121,17 +121,7 @@ public:
     return *this;
   }
 
-  void initialize()
-  {
-    wake_up_ = std::make_shared<WakeUpSignal>();
-    for (auto& subtree : subtrees)
-    {
-      for (auto& node : subtree->nodes)
-      {
-        node->setWakeUpInstance(wake_up_);
-      }
-    }
-  }
+  void initialize();
 
   void haltTree()
   {
@@ -174,6 +164,9 @@ public:
   //Call the visitor for each node of the tree.
   void applyVisitor(const std::function<void(TreeNode*)>& visitor);
 
+  uint16_t assignUID(TreeNode& node);
+
+
 private:
   std::shared_ptr<WakeUpSignal> wake_up_;
 
@@ -184,6 +177,8 @@ private:
   };
 
   NodeStatus tickRoot(TickOption opt, std::chrono::milliseconds sleep_time);
+
+  uint16_t uid_counter_ = 0;
 };
 
 class Parser;

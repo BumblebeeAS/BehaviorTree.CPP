@@ -14,6 +14,7 @@
 #pragma once
 
 #include <condition_variable>
+#include <exception>
 #include <mutex>
 #include <map>
 
@@ -79,7 +80,7 @@ struct NodeConfig
 
 #ifdef USE_BTCPP3_OLD_NAMES
 // back compatibility
-using NodeConfig = NodeConfig;
+using NodeConfiguration = NodeConfig;
 #endif
 
 template <typename T>
@@ -174,8 +175,13 @@ public:
      */
   void setPostTickOverrideFunction(PostTickOverrideCallback callback);
 
-  // get an unique identifier of this instance of treeNode
+  /// The unique identifier of this instance of treeNode.
+  /// It is assigneld by the factory
   uint16_t UID() const;
+
+  /// Human readable identifier, that includes the hierarchy of Subtrees
+  /// See tutorial 10 as an example.
+  const std::string& fullPath() const;
 
   /// registrationName is the ID used by BehaviorTreeFactory to create an instance.
   const std::string& registrationName() const;
@@ -287,7 +293,9 @@ private:
 
   StatusChangeSignal state_change_signal_;
 
-  const uint16_t uid_;
+  uint16_t uid_ = 0;
+
+  std::string full_path_;
 
   NodeConfig config_;
 
@@ -343,9 +351,9 @@ inline Result TreeNode::getInput(const std::string& key, T& destination) const
 
     std::unique_lock<std::mutex> entry_lock(config_.blackboard->entryMutex());
     const Any* val = config_.blackboard->getAny(static_cast<std::string>(remapped_key));
-    if (val && val->empty() == false)
+    if (val && !val->empty())
     {
-      if (std::is_same<T, std::string>::value == false &&
+      if (!std::is_same_v<T, std::string> &&
           val->type() == typeid(std::string))
       {
         destination = convertFromString<T>(val->cast<std::string>());
