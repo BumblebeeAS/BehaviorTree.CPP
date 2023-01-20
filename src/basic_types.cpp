@@ -100,6 +100,11 @@ std::string convertFromString<std::string>(StringView str)
     return std::string( str.data(), str.size() );
 }
 
+template <>
+short convertFromString<short>(StringView str)
+{
+    return  std::stoi(str.data());
+}
 
 template <>
 int convertFromString<int>(StringView str)
