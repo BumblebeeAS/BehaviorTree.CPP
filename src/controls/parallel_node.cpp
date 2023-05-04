@@ -100,6 +100,16 @@ NodeStatus ParallelNode::tick()
       continue;
     }
 
+    if (child_node->registrationName() == "Log")
+    {
+      if(!in_skip_list)
+      {
+        skip_list_.insert(i);
+      }
+
+      continue;
+    }
+
     switch (child_status)
     {
       case NodeStatus::SUCCESS: {
