@@ -29,7 +29,7 @@
 
 #ifdef USING_ROS
 #include <ros/package.h>
-#include <ros/ros.h>
+#include <ros/node_handle.h>
 #endif
 
 #ifdef USING_ROS2

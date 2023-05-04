@@ -10,12 +10,12 @@ if(BTCPP_SQLITE_LOGGING)
     find_package(SQLite3 REQUIRED)
 endif()
 
-find_package(catkin REQUIRED COMPONENTS roslib)
+find_package(catkin REQUIRED COMPONENTS roslib roscpp)
 
 catkin_package(
         INCLUDE_DIRS include
         LIBRARIES ${BTCPP_LIBRARY}
-        CATKIN_DEPENDS roslib )
+        CATKIN_DEPENDS roslib roscpp)
 
 set(BTCPP_EXTRA_INCLUDE_DIRS ${catkin_INCLUDE_DIRS} )
 
