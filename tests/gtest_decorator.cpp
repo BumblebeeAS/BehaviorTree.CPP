@@ -208,7 +208,7 @@ TEST(Decorator, RunOnce)
 
   auto tree = factory.createTreeFromText(xml_text);
 
-  for(int i=0; i<5; i++)
+  for (int i = 0; i < 5; i++)
   {
     NodeStatus status = tree.tickWhileRunning();
     ASSERT_EQ(status, NodeStatus::SUCCESS);
@@ -218,5 +218,3 @@ TEST(Decorator, RunOnce)
   // counters[1] contains the number ot times TestB was ticked
   ASSERT_EQ(counters[1], 5);
 }
-
-

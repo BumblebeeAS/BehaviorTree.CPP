@@ -57,14 +57,13 @@ int main()
   auto tree = factory.createTree("MainTree");
 
   std::cout << "----------- XML file  ----------\n"
-            << BT::WriteTreeToXML(tree, false)
-            << "--------------------------------\n";
+            << BT::WriteTreeToXML(tree, false) << "--------------------------------\n";
 
   // Connect the Groot2Publisher. This will allow Groot2 to
   // get the tree and poll status updates.
   BT::Groot2Publisher publisher(tree);
 
-  while(1)
+  while (1)
   {
     std::cout << "Start" << std::endl;
     cross_door.reset();

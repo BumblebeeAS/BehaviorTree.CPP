@@ -7,7 +7,6 @@
 
 namespace BT
 {
-
 class Groot2Publisher : public StatusChangeLogger
 {
   static std::mutex used_ports_mutex;
@@ -15,16 +14,13 @@ class Groot2Publisher : public StatusChangeLogger
 
   using Position = Monitor::Hook::Position;
 
-  public:
+public:
   Groot2Publisher(const BT::Tree& tree, unsigned server_port = 1667);
 
   ~Groot2Publisher() override;
 
-  private:
-
-  void callback(Duration timestamp,
-                const TreeNode& node,
-                NodeStatus prev_status,
+private:
+  void callback(Duration timestamp, const TreeNode& node, NodeStatus prev_status,
                 NodeStatus status) override;
 
   void flush() override;
@@ -78,4 +74,3 @@ class Groot2Publisher : public StatusChangeLogger
   void enableAllHooks(bool enable);
 };
 }   // namespace BT
-

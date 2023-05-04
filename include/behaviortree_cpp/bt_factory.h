@@ -49,14 +49,14 @@ inline TreeNodeManifest CreateManifest(const std::string& ID,
 #ifdef BT_PLUGIN_EXPORT
 
 #if defined(_WIN32)
-  #define BTCPP_EXPORT extern "C" __declspec(dllexport)
+#define BTCPP_EXPORT extern "C" __declspec(dllexport)
 #else
-  // Unix-like OSes
-  #define BTCPP_EXPORT extern "C" __attribute__ ((visibility ("default")))
+// Unix-like OSes
+#define BTCPP_EXPORT extern "C" __attribute__((visibility("default")))
 #endif
 
 #else
-  #define BTCPP_EXPORT static
+#define BTCPP_EXPORT static
 #endif
 /* Use this macro to automatically register one or more custom Nodes
 * into a factory. For instance:
@@ -174,7 +174,6 @@ public:
   void applyVisitor(const std::function<void(TreeNode*)>& visitor);
 
   uint16_t getUID();
-
 
 private:
   std::shared_ptr<WakeUpSignal> wake_up_;
@@ -314,9 +313,9 @@ public:
   void registerNodeType(const std::string& ID, const PortsList& ports, ExtraArgs... args)
   {
     static_assert(std::is_base_of<ActionNodeBase, T>::value ||
-                  std::is_base_of<ControlNode, T>::value ||
-                  std::is_base_of<DecoratorNode, T>::value ||
-                  std::is_base_of<ConditionNode, T>::value,
+                      std::is_base_of<ControlNode, T>::value ||
+                      std::is_base_of<DecoratorNode, T>::value ||
+                      std::is_base_of<ConditionNode, T>::value,
                   "[registerNode]: accepts only classed derived from either "
                   "ActionNodeBase, "
                   "DecoratorNode, ControlNode or ConditionNode");
@@ -350,7 +349,8 @@ public:
   void registerNodeType(const std::string& ID, ExtraArgs... args)
   {
     constexpr bool param_constructable =
-        std::is_constructible<T, const std::string&, const NodeConfig&, ExtraArgs...>::value;
+        std::is_constructible<T, const std::string&, const NodeConfig&,
+                              ExtraArgs...>::value;
     constexpr bool has_static_ports_list = has_static_method_providedPorts<T>::value;
 
     // clang-format off
@@ -451,8 +451,7 @@ public:
   /**
    * @brief substitutionRules return the current substitution rules.
    */
-  const std::unordered_map<std::string, SubstitutionRule>&
-  substitutionRules() const;
+  const std::unordered_map<std::string, SubstitutionRule>& substitutionRules() const;
 
 private:
   std::unordered_map<std::string, NodeBuilder> builders_;
@@ -465,7 +464,6 @@ private:
   std::shared_ptr<BT::Parser> parser_;
 
   std::unordered_map<std::string, SubstitutionRule> substitution_rules_;
-
 };
 
 }   // namespace BT

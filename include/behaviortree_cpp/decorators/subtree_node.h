@@ -72,10 +72,8 @@ public:
     return NodeType::SUBTREE;
   }
 
-
-  private:
+private:
   std::string subtree_id_;
-
 };
 
 }   // namespace BT

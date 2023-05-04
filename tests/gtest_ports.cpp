@@ -177,14 +177,12 @@ TEST(PortTest, IllegalPorts)
   ASSERT_ANY_THROW(factory.registerNodeType<IllegalPorts>("nope"));
 }
 
-
 class ActionVectorIn : public SyncActionNode
 {
 public:
   ActionVectorIn(const std::string& name, const NodeConfig& config,
                  std::vector<double>* states) :
-    SyncActionNode(name, config),
-    states_(states)
+    SyncActionNode(name, config), states_(states)
   {}
 
   NodeStatus tick() override
@@ -197,10 +195,10 @@ public:
   {
     return {BT::InputPort<std::vector<double>>("states")};
   }
+
 private:
   std::vector<double>* states_;
 };
-
 
 TEST(PortTest, SubtreeStringInput_Issue489)
 {
@@ -288,6 +286,3 @@ TEST(PortTest, StrintToEnum)
   ASSERT_EQ(Color::Blue, first_node->color);
   ASSERT_EQ(Color::Green, second_node->color);
 }
-
-
-

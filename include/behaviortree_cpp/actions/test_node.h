@@ -19,7 +19,6 @@
 
 namespace BT
 {
-
 struct TestNodeConfig
 {
   /// status to return when the action is completed
@@ -74,7 +73,6 @@ public:
   void setConfig(const TestNodeConfig& config);
 
 private:
-
   virtual NodeStatus onStart() override;
 
   virtual NodeStatus onRunning() override;

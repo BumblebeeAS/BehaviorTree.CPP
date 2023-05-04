@@ -4,13 +4,19 @@ using namespace BT;
 
 // To demonstrate how to pass arguments by reference, we
 // use a simple non-copyable object
-class NoCopyObj {
+class NoCopyObj
+{
 public:
-  NoCopyObj(int val): _value(val) {}
+  NoCopyObj(int val) : _value(val)
+  {}
 
-  NoCopyObj(const NoCopyObj& ) = delete;
-  NoCopyObj& operator =(const NoCopyObj& ) = delete;
-  int value() { return _value; }
+  NoCopyObj(const NoCopyObj&) = delete;
+  NoCopyObj& operator=(const NoCopyObj&) = delete;
+  int value()
+  {
+    return _value;
+  }
+
 private:
   int _value = 0;
 };
@@ -36,8 +42,8 @@ public:
 
   NodeStatus tick() override
   {
-    std::cout << name() << ": " << _arg1 << " / "
-              << _arg2 << " / " << _nc.value() << std::endl;
+    std::cout << name() << ": " << _arg1 << " / " << _arg2 << " / " << _nc.value()
+              << std::endl;
     return NodeStatus::SUCCESS;
   }
   static PortsList providedPorts()

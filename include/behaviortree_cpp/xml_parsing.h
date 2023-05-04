@@ -26,12 +26,10 @@ public:
 
   void loadFromText(const std::string& xml_text, bool add_includes = true) override;
 
-  [[nodiscard]] std::vector<std::string>
-  registeredBehaviorTrees() const override;
+  [[nodiscard]] std::vector<std::string> registeredBehaviorTrees() const override;
 
-  [[nodiscard]]Tree
-  instantiateTree(const Blackboard::Ptr& root_blackboard,
-                  std::string main_tree_to_execute = {}) override;
+  [[nodiscard]] Tree instantiateTree(const Blackboard::Ptr& root_blackboard,
+                                     std::string main_tree_to_execute = {}) override;
 
   void clearInternalState() override;
 
@@ -43,12 +41,10 @@ private:
 void VerifyXML(const std::string& xml_text,
                const std::unordered_map<std::string, NodeType>& registered_nodes);
 
-[[nodiscard]]
-std::string writeTreeNodesModelXML(const BehaviorTreeFactory& factory,
-                                   bool include_builtin = false);
+[[nodiscard]] std::string writeTreeNodesModelXML(const BehaviorTreeFactory& factory,
+                                                 bool include_builtin = false);
 
-[[nodiscard]]
-std::string WriteTreeToXML(const Tree& tree, bool add_metadata = false);
+[[nodiscard]] std::string WriteTreeToXML(const Tree& tree, bool add_metadata = false);
 
 }   // namespace BT
 

@@ -138,7 +138,6 @@ TEST(Preconditions, Basic)
   ASSERT_EQ(counters[3], 1);   // executed
 }
 
-
 TEST(Preconditions, Issue533)
 {
   BehaviorTreeFactory factory;

@@ -289,15 +289,17 @@ class ModifyPose : public BT::SyncActionNode
 {
 public:
   // Any TreeNode with ports must have a constructor with this signature
-  ModifyPose(const std::string& name, const BT::NodeConfig& config)
-    : SyncActionNode(name, config)
+  ModifyPose(const std::string& name, const BT::NodeConfig& config) :
+    SyncActionNode(name, config)
   {}
 
-  static BT::PortsList providedPorts() {
-    return{ BT::BidirectionalPort<Pose2D>("pose") };
+  static BT::PortsList providedPorts()
+  {
+    return {BT::BidirectionalPort<Pose2D>("pose")};
   }
 
-  BT::NodeStatus tick() override {
+  BT::NodeStatus tick() override
+  {
     Pose2D pose;
     getInput("pose", pose);
     pose.theta *= 2;

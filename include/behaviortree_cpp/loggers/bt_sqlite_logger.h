@@ -3,13 +3,13 @@
 #include <filesystem>
 #include "behaviortree_cpp/loggers/abstract_logger.h"
 
-namespace sqlite{
+namespace sqlite
+{
 class Connection;
 }
 
 namespace BT
 {
-
 /**
  * @brief The SqliteLogger is a logger that will store the tree and all the
  * status transitions in a SQLite database (single file).
@@ -24,15 +24,11 @@ namespace BT
 class SqliteLogger : public StatusChangeLogger
 {
 public:
-  SqliteLogger(const Tree &tree,
-               std::filesystem::path const& file,
-               bool append = false);
+  SqliteLogger(const Tree& tree, std::filesystem::path const& file, bool append = false);
 
   virtual ~SqliteLogger() override;
 
-  virtual void callback(Duration timestamp,
-                        const TreeNode& node,
-                        NodeStatus prev_status,
+  virtual void callback(Duration timestamp, const TreeNode& node, NodeStatus prev_status,
                         NodeStatus status) override;
 
   virtual void flush() override;
@@ -45,7 +41,8 @@ private:
 
   int session_id_ = -1;
 
-  struct Transition {
+  struct Transition
+  {
     uint16_t node_uid;
     int64_t timestamp;
     int64_t duration;
@@ -61,8 +58,6 @@ private:
   std::atomic_bool loop_ = true;
 
   void threadLoop();
-
 };
 
-}
-
+}   // namespace BT

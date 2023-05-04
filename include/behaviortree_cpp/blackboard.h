@@ -49,7 +49,7 @@ public:
   {
     std::unique_lock<std::mutex> lock(mutex_);
     // search first if this port was remapped
-    if(!internal_to_external_.empty())
+    if (!internal_to_external_.empty())
     {
       if (auto parent = parent_bb_.lock())
       {
@@ -68,7 +68,7 @@ public:
   {
     // "Avoid Duplication in const and Non-const Member Function,"
     // on p. 23, in Item 3 "Use const whenever possible," in Effective C++, 3d ed
-    return const_cast<Any*>( static_cast<const Blackboard &>(*this).getAny(key));
+    return const_cast<Any*>(static_cast<const Blackboard&>(*this).getAny(key));
   }
 
   /** Return true if the entry with the given key was found.
@@ -111,7 +111,7 @@ public:
 
     // search first if this port was remapped.
     // Change the parent_bb_ in that case
-    if(!internal_to_external_.empty())
+    if (!internal_to_external_.empty())
     {
       auto remapping_it = internal_to_external_.find(key);
       if (remapping_it != internal_to_external_.end())
@@ -182,8 +182,8 @@ public:
         {
           debugMessage();
 
-          throw LogicError("Blackboard::set() failed for key [",
-                           key, "]: once declared, the type of a port "
+          throw LogicError("Blackboard::set() failed for key [", key,
+                           "]: once declared, the type of a port "
                            "shall not change. "
                            "Declared type [",
                            BT::demangle(previous_type), "] != current type [",
@@ -194,7 +194,7 @@ public:
     }
   }
 
-  void setPortInfo(const std::string &key, const PortInfo& info);
+  void setPortInfo(const std::string& key, const PortInfo& info);
 
   const PortInfo* portInfo(const std::string& key);
 
@@ -236,8 +236,6 @@ private:
   std::unordered_map<std::string, Entry> storage_;
   std::weak_ptr<Blackboard> parent_bb_;
   std::unordered_map<std::string, std::string> internal_to_external_;
-
 };
 
 }   // namespace BT
-
