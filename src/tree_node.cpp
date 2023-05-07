@@ -26,9 +26,30 @@ TreeNode::TreeNode(std::string name, NodeConfig config) :
 NodeStatus TreeNode::executeTick()
 {
   auto new_status = status_;
+
+  // injected pre-callback
+  if(status_ == NodeStatus::IDLE)
+  {
+    PreTickCallback  callback;
+    {
+      std::unique_lock lk(callback_injection_mutex_);
+      callback = pre_condition_callback_;
+    }
+    if(callback)
+    {
+      auto override_status = callback(*this);
+      if(isStatusCompleted(override_status))
+      {
+        // return immediately and don't execute the actual tick()
+        new_status = override_status;
+        setStatus(new_status);
+        return new_status;
+      }
+    }
+  }
+
   // a pre-condition may return the new status.
   // In this case it override the actual tick()
-
   if (auto precond = checkPreConditions())
   {
     new_status = precond.value();
@@ -41,19 +62,25 @@ NodeStatus TreeNode::executeTick()
 
   checkPostConditions(new_status);
 
-  // a post-condition may overwrite the result of the tick
-  // with its own result.
-  if (post_condition_callback_)
+  // injected post callback
+  if(isStatusCompleted(new_status))
   {
-    // may overwrite the status
-    if (auto post = post_condition_callback_(*this, status_, new_status))
+    PostTickCallback  callback;
     {
-      new_status = post.value();
+      std::unique_lock lk(callback_injection_mutex_);
+      callback = post_condition_callback_;
+    }
+    if(callback)
+    {
+      auto override_status = callback(*this, new_status);
+      if(isStatusCompleted(override_status))
+      {
+        new_status = override_status;
+      }
     }
   }
 
   setStatus(new_status);
-
   return new_status;
 }
 
@@ -164,8 +191,19 @@ void TreeNode::checkPostConditions(NodeStatus status)
 
 void TreeNode::resetStatus()
 {
-  std::unique_lock<std::mutex> lock(state_mutex_);
-  status_ = NodeStatus::IDLE;
+  NodeStatus prev_status;
+  {
+    std::unique_lock<std::mutex> lock(state_mutex_);
+    prev_status = status_;
+    status_ = NodeStatus::IDLE;
+  }
+
+  if (prev_status != NodeStatus::IDLE)
+  {
+    state_condition_variable_.notify_all();
+    state_change_signal_.notify(std::chrono::high_resolution_clock::now(), *this,
+                                prev_status, NodeStatus::IDLE);
+  }
 }
 
 NodeStatus TreeNode::status() const
@@ -201,14 +239,26 @@ TreeNode::subscribeToStatusChange(TreeNode::StatusChangeCallback callback)
   return state_change_signal_.subscribe(std::move(callback));
 }
 
+void TreeNode::setPreTickFunction(PreTickCallback callback)
+{
+  std::unique_lock lk(callback_injection_mutex_);
+  pre_condition_callback_ = callback;
+}
+
+void TreeNode::setPostTickFunction(PostTickCallback callback)
+{
+  std::unique_lock lk(callback_injection_mutex_);
+  post_condition_callback_ = callback;
+}
+
 uint16_t TreeNode::UID() const
 {
-  return uid_;
+  return config_.uid;
 }
 
 const std::string &TreeNode::fullPath() const
 {
-  return full_path_;
+  return config_.path;
 }
 
 const std::string& TreeNode::registrationName() const
@@ -319,6 +369,42 @@ void TreeNode::modifyPortsRemapping(const PortsRemapping& new_remapping)
     {
       it->second = new_it.second;
     }
+  }
+}
+
+template <>
+std::string toStr<PreCond>(PreCond pre)
+{
+  switch (pre)
+  {
+    case PreCond::SUCCESS_IF:
+      return "_successIf";
+    case PreCond::FAILURE_IF:
+      return "_failureIf";
+    case PreCond::SKIP_IF:
+      return "_skipIf";
+    case PreCond::WHILE_TRUE:
+      return "_while";
+    default:
+      return "Undefined";
+  }
+}
+
+template <>
+std::string toStr<PostCond>(PostCond pre)
+{
+  switch (pre)
+  {
+    case PostCond::ON_SUCCESS:
+      return "_onSuccess";
+    case PostCond::ON_FAILURE:
+      return "_onFailure";
+    case PostCond::ALWAYS:
+      return "_post";
+    case PostCond::ON_HALTED:
+      return "_onHalted";
+    default:
+      return "Undefined";
   }
 }
 

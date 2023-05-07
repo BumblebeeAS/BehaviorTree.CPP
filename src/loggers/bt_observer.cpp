@@ -38,6 +38,7 @@ TreeObserver::TreeObserver(const BT::Tree& tree) : StatusChangeLogger(tree.rootN
 
   for(const auto& [path, uid]: _path_to_uid) {
     _statistics[uid] = {};
+    _uid_to_path[uid] = path;
   }
 }
 
@@ -50,20 +51,28 @@ void TreeObserver::callback(Duration timestamp, const TreeNode& node,
                             NodeStatus /*prev_status*/, NodeStatus status)
 {
   auto& statistics = _statistics[node.UID()];
-
-  statistics.tick_count++;
   statistics.current_status = status;
   statistics.last_timestamp = timestamp;
 
+  if(status == NodeStatus::IDLE) {
+    return;
+  }
+
+  statistics.transitions_count++;
+
   if(status == NodeStatus::SUCCESS)
   {
-    statistics.last_result = NodeStatus::SUCCESS;
+    statistics.last_result = status;
     statistics.success_count++;
   }
   else if(status == NodeStatus::FAILURE)
   {
-    statistics.last_result = NodeStatus::FAILURE;
+    statistics.last_result = status;
     statistics.failure_count++;
+  }
+  else if(status == NodeStatus::SKIPPED)
+  {
+    statistics.skip_count++;
   }
 }
 
@@ -92,6 +101,11 @@ const std::unordered_map<uint16_t, TreeObserver::NodeStatistics> &TreeObserver::
 
 const std::unordered_map<std::string, uint16_t> &TreeObserver::pathToUID() const {
   return _path_to_uid;
+}
+
+const std::map<uint16_t, std::string> &TreeObserver::uidToPath() const
+{
+  return _uid_to_path;
 }
 
 

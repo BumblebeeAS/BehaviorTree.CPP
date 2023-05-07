@@ -14,7 +14,9 @@
 #include <fstream>
 #include "behaviortree_cpp/bt_factory.h"
 #include "behaviortree_cpp/utils/shared_library.h"
+#include "behaviortree_cpp/contrib/json.hpp"
 #include "behaviortree_cpp/xml_parsing.h"
+#include "wildcards/wildcards.hpp"
 
 #ifdef USING_ROS
 #include <ros/package.h>
@@ -46,6 +48,7 @@ BehaviorTreeFactory::BehaviorTreeFactory()
   registerNodeType<RepeatNode>("Repeat");
   registerNodeType<TimeoutNode<>>("Timeout");
   registerNodeType<DelayNode>("Delay");
+  registerNodeType<RunOnceNode>("RunOnce");
 
   registerNodeType<ForceSuccessNode>("ForceSuccess");
   registerNodeType<ForceFailureNode>("ForceFailure");
@@ -65,9 +68,6 @@ BehaviorTreeFactory::BehaviorTreeFactory()
   registerNodeType<SwitchNode<5>>("Switch5");
   registerNodeType<SwitchNode<6>>("Switch6");
 
-#ifdef NCURSES_FOUND
-  registerNodeType<ManualSelectorNode>("ManualSelector");
-#endif
   for (const auto& it : builders_)
   {
     builtin_IDs_.insert(it.first);
@@ -246,8 +246,7 @@ void BehaviorTreeFactory::clearRegisteredBehaviorTrees()
 std::unique_ptr<TreeNode> BehaviorTreeFactory::instantiateTreeNode(
     const std::string& name, const std::string& ID, const NodeConfig& config) const
 {
-  auto it = builders_.find(ID);
-  if (it == builders_.end())
+  auto idNotFound = [this, ID]
   {
     std::cerr << ID << " not included in this list:" << std::endl;
     for (const auto& builder_it : builders_)
@@ -255,9 +254,63 @@ std::unique_ptr<TreeNode> BehaviorTreeFactory::instantiateTreeNode(
       std::cerr << builder_it.first << std::endl;
     }
     throw RuntimeError("BehaviorTreeFactory: ID [", ID, "] not registered");
+  };
+
+  auto it_manifest = manifests_.find(ID);
+  if (it_manifest == manifests_.end())
+  {
+    idNotFound();
   }
 
-  std::unique_ptr<TreeNode> node = it->second(name, config);
+
+  std::unique_ptr<TreeNode> node;
+
+  bool substituted = false;
+  for(const auto& [filter, rule]: substitution_rules_)
+  {
+    if( filter == name || filter == ID || wildcards::match(config.path, filter))
+    {
+      // first case: the rule is simply a string with the name of the
+      // node to create instead
+      if(const auto substituted_ID = std::get_if<std::string>(&rule) )
+      {
+        auto it_builder = builders_.find(*substituted_ID);
+        if (it_builder != builders_.end())
+        {
+          auto& builder = it_builder->second;
+          node = builder(name, config);
+        }
+        else{
+          throw RuntimeError("Substituted Node ID not found");
+        }
+        substituted = true;
+        break;
+      }
+      else if(const auto test_config = std::get_if<TestNodeConfig>(&rule) )
+      {
+        // second case, the varian is a TestNodeConfig
+        auto test_node = new TestNode(name, config);
+        test_node->setConfig(*test_config);
+
+        node.reset(test_node);
+        substituted = true;
+        break;
+      }
+    }
+  }
+
+  // No substitution rule applied: default behavior
+  if(!substituted)
+  {
+    auto it_builder = builders_.find(ID);
+    if (it_builder == builders_.end())
+    {
+      idNotFound();
+    }
+    auto& builder = it_builder->second;
+    node = builder(name, config);
+  }
+
   node->setRegistrationID(ID);
   node->config_.enums = scripting_enums_;
 
@@ -299,6 +352,13 @@ const std::set<std::string>& BehaviorTreeFactory::builtinNodes() const
 Tree BehaviorTreeFactory::createTreeFromText(const std::string& text,
                                              Blackboard::Ptr blackboard)
 {
+  if(!parser_->registeredBehaviorTrees().empty()) {
+    std::cout << "WARNING: You executed BehaviorTreeFactory::createTreeFromText "
+                 "after registerBehaviorTreeFrom[File/Text].\n"
+                 "This is NOTm probably, what you want to do.\n"
+                 "You should probably use BehaviorTreeFactory::createTree, instead"
+              << std::endl;
+  }
   XMLParser parser(*this);
   parser.loadFromText(text);
   auto tree = parser.instantiateTree(blackboard);
@@ -309,6 +369,14 @@ Tree BehaviorTreeFactory::createTreeFromText(const std::string& text,
 Tree BehaviorTreeFactory::createTreeFromFile(const std::string& file_path,
                                              Blackboard::Ptr blackboard)
 {
+  if(!parser_->registeredBehaviorTrees().empty()) {
+    std::cout << "WARNING: You executed BehaviorTreeFactory::createTreeFromFile "
+                 "after registerBehaviorTreeFrom[File/Text].\n"
+                 "This is NOTm probably, what you want to do.\n"
+                 "You should probably use BehaviorTreeFactory::createTree, instead"
+              << std::endl;
+  }
+
   XMLParser parser(*this);
   parser.loadFromFile(file_path);
   auto tree = parser.instantiateTree(blackboard);
@@ -340,6 +408,62 @@ void BehaviorTreeFactory::registerScriptingEnum(StringView name, int value)
   (*scripting_enums_)[std::string(name)] = value;
 }
 
+void BehaviorTreeFactory::clearSubstitutionRules()
+{
+  substitution_rules_.clear();
+}
+
+void BehaviorTreeFactory::addSubstitutionRule(StringView filter, SubstitutionRule rule)
+{
+  substitution_rules_[std::string(filter)] = rule;
+}
+
+void BehaviorTreeFactory::loadSubstitutionRuleFromJSON(const std::string &json_text)
+{
+  auto const json = nlohmann::json::parse(json_text);
+
+  std::unordered_map<std::string, TestNodeConfig> configs;
+
+  auto test_configs = json.at("TestNodeConfigs");
+  for(auto const& [name, test_config]: test_configs.items())
+  {
+    auto& config = configs[name];
+
+    auto status = test_config.at("return_status").get<std::string>();
+    config.return_status = convertFromString<NodeStatus>(status);
+    if(test_config.contains("async_delay"))
+    {
+      config.async_delay =
+          std::chrono::milliseconds(test_config["async_delay"].get<int>());
+    }
+    if(test_config.contains("post_script"))
+    {
+      config.post_script = test_config["post_script"].get<std::string>();
+    }
+  }
+
+  auto substitutions = json.at("SubstitutionRules");
+  for(auto const& [node_name, test]: substitutions.items())
+  {
+    auto test_name = test.get<std::string>();
+    auto it = configs.find(test_name);
+    if(it == configs.end())
+    {
+      addSubstitutionRule(node_name, test_name);
+    }
+    else {
+      addSubstitutionRule(node_name, it->second);
+    }
+  }
+}
+
+const std::unordered_map<std::string, BehaviorTreeFactory::SubstitutionRule> &
+BehaviorTreeFactory::substitutionRules() const
+{
+  return substitution_rules_;
+}
+
+
 void Tree::initialize()
 {
   wake_up_ = std::make_shared<WakeUpSignal>();
@@ -348,16 +472,6 @@ void Tree::initialize()
     for (auto& node : subtree->nodes)
     {
       node->setWakeUpInstance(wake_up_);
-
-      node->full_path_ = subtree->instance_name;
-      if(!node->full_path_.empty()) {
-        node->full_path_ += "/";
-      }
-      node->full_path_ += node->name();
-
-      if(node->name() == node->registrationName()) {
-        node->full_path_ += "::" + std::to_string(node->UID());
-      }
     }
   }
 }
@@ -382,9 +496,14 @@ Tree::~Tree()
   haltTree();
 }
 
+NodeStatus Tree::tickExactlyOnce()
+{
+  return tickRoot(EXACTLY_ONCE, {});
+}
+
 NodeStatus Tree::tickOnce()
 {
-  return tickRoot(ONCE, {});
+  return tickRoot(ONCE_UNLESS_WOKEN_UP, {});
 }
 
 NodeStatus Tree::tickWhileRunning(std::chrono::milliseconds sleep_time)
@@ -419,9 +538,8 @@ void Tree::applyVisitor(const std::function<void(TreeNode*)>& visitor)
   }
 }
 
-uint16_t Tree::assignUID(TreeNode &node) {
+uint16_t Tree::getUID() {
   auto uid =  ++uid_counter_;
-  node.uid_ = uid;
   return uid;
 }
 
@@ -429,19 +547,30 @@ NodeStatus Tree::tickRoot(TickOption opt, std::chrono::milliseconds sleep_time)
 {
   NodeStatus status = NodeStatus::IDLE;
 
+  if (!wake_up_)
+  {
+    initialize();
+  }
+
+  if (!rootNode())
+  {
+    throw RuntimeError("Empty Tree");
+  }
+
   while (status == NodeStatus::IDLE ||
          (opt == TickOption::WHILE_RUNNING && status == NodeStatus::RUNNING))
   {
-    if (!wake_up_)
+    status = rootNode()->executeTick();
+
+    // Inner loop. The previous tick might have triggered the wake-up
+    // in this case, unless TickOption::EXACTLY_ONCE, we tick again
+    while( opt != TickOption::EXACTLY_ONCE &&
+           status == NodeStatus::RUNNING &&
+           wake_up_->waitFor(std::chrono::milliseconds(0)) )
     {
-      initialize();
+      status = rootNode()->executeTick();
     }
 
-    if (!rootNode())
-    {
-      throw RuntimeError("Empty Tree");
-    }
-    status = rootNode()->executeTick();
     if (status == NodeStatus::SUCCESS || status == NodeStatus::FAILURE)
     {
       rootNode()->resetStatus();

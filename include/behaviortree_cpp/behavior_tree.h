@@ -20,7 +20,6 @@
 #include "behaviortree_cpp/controls/sequence_node.h"
 #include "behaviortree_cpp/controls/sequence_star_node.h"
 #include "behaviortree_cpp/controls/switch_node.h"
-#include "behaviortree_cpp/controls/manual_node.h"
 #include "behaviortree_cpp/controls/if_then_else_node.h"
 #include "behaviortree_cpp/controls/while_do_else_node.h"
 
@@ -30,12 +29,14 @@
 #include "behaviortree_cpp/decorators/inverter_node.h"
 #include "behaviortree_cpp/decorators/retry_node.h"
 #include "behaviortree_cpp/decorators/repeat_node.h"
+#include "behaviortree_cpp/decorators/run_once_node.h"
 #include "behaviortree_cpp/decorators/subtree_node.h"
 
 #include "behaviortree_cpp/actions/always_success_node.h"
 #include "behaviortree_cpp/actions/always_failure_node.h"
 #include "behaviortree_cpp/actions/script_node.h"
 #include "behaviortree_cpp/actions/set_blackboard_node.h"
+#include "behaviortree_cpp/actions/test_node.h"
 
 #include "behaviortree_cpp/decorators/force_success_node.h"
 #include "behaviortree_cpp/decorators/force_failure_node.h"
@@ -88,5 +89,10 @@ inline NodeType getType()
     return NodeType::UNDEFINED;
   // clang-format on
 }
+
+
+const char* LibraryVersionString();
+
+int LibraryVersionNumber();
 
 }   // namespace BT

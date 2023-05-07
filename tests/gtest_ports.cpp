@@ -176,3 +176,113 @@ TEST(PortTest, IllegalPorts)
   BehaviorTreeFactory factory;
   ASSERT_ANY_THROW(factory.registerNodeType<IllegalPorts>("nope"));
 }
+
+class ActionVectorIn : public SyncActionNode
+{
+public:
+  ActionVectorIn(const std::string& name, const NodeConfig& config,
+                 std::vector<double>* states) :
+    SyncActionNode(name, config), states_(states)
+  {}
+
+  NodeStatus tick() override
+  {
+    getInput("states", *states_);
+    return NodeStatus::SUCCESS;
+  }
+
+  static PortsList providedPorts()
+  {
+    return {BT::InputPort<std::vector<double>>("states")};
+  }
+
+private:
+  std::vector<double>* states_;
+};
+
+TEST(PortTest, SubtreeStringInput_Issue489)
+{
+  std::string xml_txt = R"(
+    <root BTCPP_format="4" >
+      <BehaviorTree ID="Main">
+        <SubTree ID="Subtree_A" states="3;7"/>
+      </BehaviorTree>
+
+      <BehaviorTree ID="Subtree_A">
+        <ActionVectorIn states="{states}"/>
+      </BehaviorTree>
+    </root>)";
+
+  std::vector<double> states;
+
+  BehaviorTreeFactory factory;
+  factory.registerNodeType<ActionVectorIn>("ActionVectorIn", &states);
+
+  factory.registerBehaviorTreeFromText(xml_txt);
+  auto tree = factory.createTree("Main");
+
+  NodeStatus status = tree.tickWhileRunning();
+
+  ASSERT_EQ(status, NodeStatus::SUCCESS);
+  ASSERT_EQ(2, states.size());
+  ASSERT_EQ(3, states[0]);
+  ASSERT_EQ(7, states[1]);
+}
+
+enum class Color
+{
+  Red = 0,
+  Blue = 1,
+  Green = 2,
+  Undefined
+};
+
+class ActionEnum : public SyncActionNode
+{
+public:
+  ActionEnum(const std::string& name, const NodeConfig& config) :
+    SyncActionNode(name, config)
+  {}
+
+  NodeStatus tick() override
+  {
+    getInput("color", color);
+    return NodeStatus::SUCCESS;
+  }
+
+  static PortsList providedPorts()
+  {
+    return {BT::InputPort<Color>("color")};
+  }
+
+  Color color = Color::Undefined;
+};
+
+TEST(PortTest, StrintToEnum)
+{
+  std::string xml_txt = R"(
+    <root BTCPP_format="4" >
+      <BehaviorTree ID="Main">
+        <Sequence>
+          <ActionEnum color="Blue"/>
+          <ActionEnum color="2"/>
+        </Sequence>
+      </BehaviorTree>
+    </root>)";
+
+  BehaviorTreeFactory factory;
+  factory.registerNodeType<ActionEnum>("ActionEnum");
+  factory.registerScriptingEnums<Color>();
+
+  auto tree = factory.createTreeFromText(xml_txt);
+
+  NodeStatus status = tree.tickWhileRunning();
+
+  ASSERT_EQ(status, NodeStatus::SUCCESS);
+
+  auto first_node = dynamic_cast<ActionEnum*>(tree.subtrees.front()->nodes[1].get());
+  auto second_node = dynamic_cast<ActionEnum*>(tree.subtrees.front()->nodes[2].get());
+
+  ASSERT_EQ(Color::Blue, first_node->color);
+  ASSERT_EQ(Color::Green, second_node->color);
+}

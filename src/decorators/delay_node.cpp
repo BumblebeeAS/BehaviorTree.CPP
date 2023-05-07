@@ -42,13 +42,10 @@ NodeStatus DelayNode::tick()
 
     timer_id_ = timer_.add(std::chrono::milliseconds(msec_), [this](bool aborted) {
       std::unique_lock<std::mutex> lk(delay_mutex_);
-      if (!aborted)
+      delay_complete_ = (!aborted);
+      if(!aborted)
       {
-        delay_complete_ = true;
-      }
-      else
-      {
-        delay_aborted_ = true;
+        emitWakeUpSignal();
       }
     });
   }
@@ -68,6 +65,7 @@ NodeStatus DelayNode::tick()
     {
       delay_started_ = false;
       delay_aborted_ = false;
+      resetChild();
     }
     return child_status;
   }

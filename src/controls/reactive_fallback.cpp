@@ -18,22 +18,16 @@ NodeStatus ReactiveFallback::tick()
 {
   size_t failure_count = 0;
 
+  bool all_skipped = true;
+  setStatus(NodeStatus::RUNNING);
+
   for (size_t index = 0; index < childrenCount(); index++)
   {
     TreeNode* current_child_node = children_nodes_[index];
     const NodeStatus child_status = current_child_node->executeTick();
 
     // switch to RUNNING state as soon as you find an active child
-    if (child_status != NodeStatus::SKIPPED)
-    {
-      setStatus(NodeStatus::RUNNING);
-    }
-    
-    if (current_child_node->registrationName() == "Log")
-    {
-      failure_count++;
-      continue;
-    }
+    all_skipped &= (child_status == NodeStatus::SKIPPED);
 
     switch (child_status)
     {
@@ -51,12 +45,13 @@ NodeStatus ReactiveFallback::tick()
       break;
 
       case NodeStatus::SUCCESS: {
-        haltChildren();
+        resetChildren();
         return NodeStatus::SUCCESS;
       }
 
       case NodeStatus::SKIPPED: {
-        // node skipped
+        // to allow it to be skipped again, we must reset the node
+        haltChild(index);
       }
       break;
 
@@ -68,12 +63,12 @@ NodeStatus ReactiveFallback::tick()
 
   if (failure_count == childrenCount())
   {
-    haltChildren();
+    resetChildren();
     return NodeStatus::FAILURE;
   }
 
   // Skip if ALL the nodes have been skipped
-  return status() == (NodeStatus::RUNNING) ? NodeStatus::SUCCESS : NodeStatus::SKIPPED;
+  return all_skipped ? NodeStatus::SKIPPED : NodeStatus::FAILURE;
 }
 
 }   // namespace BT

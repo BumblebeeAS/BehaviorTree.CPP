@@ -5,25 +5,27 @@
 class CrossDoor
 {
 public:
-    void registerNodes(BT::BehaviorTreeFactory& factory);
+  void registerNodes(BT::BehaviorTreeFactory& factory);
 
-    // SUCCESS if _door_open == true
-    BT::NodeStatus isDoorClosed();
+  void reset();
 
-    // SUCCESS if _door_open == true
-    BT::NodeStatus passThroughDoor();
+  // SUCCESS if _door_open == true
+  BT::NodeStatus isDoorClosed();
 
-    // After 3 attempts, will open a locked door
-    BT::NodeStatus pickLock();
+  // SUCCESS if _door_open == true
+  BT::NodeStatus passThroughDoor();
 
-    // FAILURE if door locked
-    BT::NodeStatus openDoor();
+  // After 3 attempts, will open a locked door
+  BT::NodeStatus pickLock();
 
-    // WILL always open a door
-    BT::NodeStatus smashDoor();
+  // FAILURE if door locked
+  BT::NodeStatus openDoor();
+
+  // WILL always open a door
+  BT::NodeStatus smashDoor();
 
 private:
-    bool _door_open   = false;
-    bool _door_locked = true;
-    int _pick_attempts = 0;
+  bool _door_open = false;
+  bool _door_locked = true;
+  int _pick_attempts = 0;
 };

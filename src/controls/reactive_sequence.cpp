@@ -16,8 +16,8 @@ namespace BT
 {
 NodeStatus ReactiveSequence::tick()
 {
-  size_t success_count = 0;
-  size_t running_count = 0;
+  bool all_skipped = true;
+  setStatus(NodeStatus::RUNNING);
 
   for (size_t index = 0; index < childrenCount(); index++)
   {
@@ -25,22 +25,13 @@ NodeStatus ReactiveSequence::tick()
     const NodeStatus child_status = current_child_node->executeTick();
 
     // switch to RUNNING state as soon as you find an active child
-    if (child_status != NodeStatus::SKIPPED)
-    {
-      setStatus(NodeStatus::RUNNING);
-    }
-    
-    if (current_child_node->registrationName() == "Log")
-    {
-      success_count++;
-      continue;
-    }
+    all_skipped &= (child_status == NodeStatus::SKIPPED);
 
     switch (child_status)
     {
       case NodeStatus::RUNNING: {
-        running_count++;
-
+        // just in case, make sure that following children are not
+        // in RUNNING state too
         for (size_t i = index + 1; i < childrenCount(); i++)
         {
           haltChild(i);
@@ -49,16 +40,15 @@ NodeStatus ReactiveSequence::tick()
       }
 
       case NodeStatus::FAILURE: {
-        haltChildren();
+        resetChildren();
         return NodeStatus::FAILURE;
       }
-      case NodeStatus::SUCCESS: {
-        success_count++;
-      }
-      break;
+      // do nothing if SUCCESS
+      case NodeStatus::SUCCESS: break;
 
-      case NodeStatus::SKIPPED: {
-        // node skipped
+      case NodeStatus::SKIPPED:{
+        // to allow it to be skipped again, we must reset the node
+        haltChild(index);
       }
       break;
 
@@ -68,14 +58,10 @@ NodeStatus ReactiveSequence::tick()
     }   // end switch
   }     //end for
 
-  if (success_count == childrenCount())
-  {
-    haltChildren();
+  resetChildren();
 
-    // Skip if ALL the nodes have been skipped
-    return status() == (NodeStatus::RUNNING) ? NodeStatus::SUCCESS : NodeStatus::SKIPPED;
-  }
-  throw LogicError("ReactiveSequence is not supposed to reach this point");
+  // Skip if ALL the nodes have been skipped
+  return all_skipped ? NodeStatus::SKIPPED : NodeStatus::SUCCESS;
 }
 
 }   // namespace BT

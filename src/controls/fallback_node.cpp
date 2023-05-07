@@ -16,7 +16,7 @@
 namespace BT
 {
 FallbackNode::FallbackNode(const std::string& name) :
-  ControlNode::ControlNode(name, {}), current_child_idx_(0)
+  ControlNode::ControlNode(name, {}), current_child_idx_(0), all_skipped_(true)
 {
   setRegistrationID("Fallback");
 }
@@ -24,6 +24,13 @@ FallbackNode::FallbackNode(const std::string& name) :
 NodeStatus FallbackNode::tick()
 {
   const size_t children_count = children_nodes_.size();
+
+  if(status() == NodeStatus::IDLE)
+  {
+    all_skipped_ = true;
+  }
+
+  setStatus(NodeStatus::RUNNING);
 
   while (current_child_idx_ < children_count)
   {
@@ -33,16 +40,7 @@ NodeStatus FallbackNode::tick()
     const NodeStatus child_status = current_child_node->executeTick();
 
     // switch to RUNNING state as soon as you find an active child
-    if (child_status != NodeStatus::SKIPPED)
-    {
-      setStatus(NodeStatus::RUNNING);
-    }
-    
-    if (current_child_node->registrationName() == "Log")
-    {
-      current_child_idx_++;
-      continue;
-    }
+    all_skipped_ &= (child_status == NodeStatus::SKIPPED);
 
     switch (child_status)
     {
@@ -50,7 +48,7 @@ NodeStatus FallbackNode::tick()
         return child_status;
       }
       case NodeStatus::SUCCESS: {
-        haltChildren();
+        resetChildren();
         current_child_idx_ = 0;
         return child_status;
       }
@@ -80,12 +78,12 @@ NodeStatus FallbackNode::tick()
   // The entire while loop completed. This means that all the children returned FAILURE.
   if (current_child_idx_ == children_count)
   {
-    haltChildren();
+    resetChildren();
     current_child_idx_ = 0;
   }
 
   // Skip if ALL the nodes have been skipped
-  return status() == (NodeStatus::RUNNING) ? NodeStatus::FAILURE : NodeStatus::SKIPPED;
+  return all_skipped_ ? NodeStatus::SKIPPED : NodeStatus::FAILURE;
 }
 
 void FallbackNode::halt()

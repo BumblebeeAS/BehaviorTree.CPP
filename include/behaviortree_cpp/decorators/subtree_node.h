@@ -50,24 +50,30 @@ namespace BT
 class SubTreeNode : public DecoratorNode
 {
 public:
-  SubTreeNode(const std::string& instance_name);
+  SubTreeNode(const std::string& name, const NodeConfig& config);
 
   virtual ~SubTreeNode() override = default;
 
-private:
-  virtual BT::NodeStatus tick() override;
+  static PortsList providedPorts();
 
-  static PortsList providedPorts()
+  void setSubtreeID(const std::string& ID)
   {
-    return {InputPort<bool>("_autoremap", false,
-                            "If true, all the ports with the same name will be "
-                            "remapped")};
+    subtree_id_ = ID;
   }
+
+  const std::string& subtreeID() const
+  {
+    return subtree_id_;
+  }
+  virtual BT::NodeStatus tick() override;
 
   virtual NodeType type() const override final
   {
     return NodeType::SUBTREE;
   }
+
+private:
+  std::string subtree_id_;
 };
 
 }   // namespace BT

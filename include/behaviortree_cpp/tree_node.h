@@ -62,6 +62,12 @@ enum class PostCond
   COUNT_
 };
 
+template <>
+std::string toStr<BT::PostCond>(BT::PostCond status);
+
+template <>
+std::string toStr<BT::PreCond>(BT::PreCond status);
+
 using ScriptingEnumsRegistry = std::unordered_map<std::string, int>;
 
 struct NodeConfig
@@ -69,19 +75,30 @@ struct NodeConfig
   NodeConfig()
   {}
 
+  // Pointer to the blackboard used by this node
   Blackboard::Ptr blackboard;
+  // List of enums available for scripting
   std::shared_ptr<ScriptingEnumsRegistry> enums;
+  // input ports
   PortsRemapping input_ports;
+  // output ports
   PortsRemapping output_ports;
+
+  // Numberic unique identifier
+  uint16_t uid = 0;
+  // Unique human-readable name, that encapsulate the subtree
+  // hierarchy, for instance, given 2 nested trees, it should be:
+  //
+  //   main_tree/nested_tree/my_action
+  std::string path;
 
   std::map<PreCond, std::string> pre_conditions;
   std::map<PostCond, std::string> post_conditions;
 };
 
-#ifdef USE_BTCPP3_OLD_NAMES
 // back compatibility
 using NodeConfiguration = NodeConfig;
-#endif
+
 
 template <typename T>
 inline constexpr bool hasNodeNameCtor()
@@ -138,10 +155,10 @@ public:
   using StatusChangeSubscriber = StatusChangeSignal::Subscriber;
   using StatusChangeCallback = StatusChangeSignal::CallableFunction;
 
-  using PreTickOverrideCallback =
-      std::function<Expected<NodeStatus>(TreeNode&, NodeStatus)>;
-  using PostTickOverrideCallback =
-      std::function<Expected<NodeStatus>(TreeNode&, NodeStatus, NodeStatus)>;
+  using PreTickCallback =
+      std::function<NodeStatus(TreeNode&)>;
+  using PostTickCallback =
+      std::function<NodeStatus(TreeNode&, NodeStatus)>;
 
   /**
      * @brief subscribeToStatusChange is used to attach a callback to a status change.
@@ -156,24 +173,24 @@ public:
 
   /** This method attaches to the TreeNode a callback with signature:
      *
-     *     Optional<NodeStatus> myCallback(TreeNode& node, NodeStatus current_status)
+     *     Optional<NodeStatus> myCallback(TreeNode& node)
      *
      * This callback is executed BEFORE the tick() and, if it returns a valid Optional<NodeStatus>,
      * the actual tick() will NOT be executed and this result will be returned instead.
      *
      * This is useful to inject a "dummy" implementation of the TreeNode at run-time
      */
-  void setPreTickOverrideFunction(PreTickOverrideCallback callback);
+  void setPreTickFunction(PreTickCallback callback);
 
   /**
      * This method attaches to the TreeNode a callback with signature:
      *
-     *     Optional<NodeStatus> myCallback(TreeNode& node, NodeStatus prev_status, NodeStatus tick_status)
+     *     Optional<NodeStatus> myCallback(TreeNode& node, NodeStatus new_status)
      *
      * This callback is executed AFTER the tick() and, if it returns a valid Optional<NodeStatus>,
      * the value returned by the actual tick() is overriden with this one.
      */
-  void setPostTickOverrideFunction(PostTickOverrideCallback callback);
+  void setPostTickFunction(PostTickCallback callback);
 
   /// The unique identifier of this instance of treeNode.
   /// It is assigneld by the factory
@@ -253,7 +270,6 @@ public:
       node_ptr->config_ = config;
       return std::unique_ptr<DerivedT>(node_ptr);
     }
-    return {};
   }
 
 protected:
@@ -293,24 +309,20 @@ private:
 
   StatusChangeSignal state_change_signal_;
 
-  uint16_t uid_ = 0;
-
-  std::string full_path_;
-
   NodeConfig config_;
 
   std::string registration_ID_;
 
-  PreTickOverrideCallback pre_condition_callback_;
+  PreTickCallback pre_condition_callback_;
 
-  PostTickOverrideCallback post_condition_callback_;
+  PostTickCallback post_condition_callback_;
+
+  std::mutex callback_injection_mutex_;
 
   std::shared_ptr<WakeUpSignal> wake_up_;
 
   std::array<ScriptFunction, size_t(PreCond::COUNT_)> pre_parsed_;
   std::array<ScriptFunction, size_t(PostCond::COUNT_)> post_parsed_;
-
-  std::shared_ptr<ScriptingEnumsRegistry> scripting_enums_;
 
   Expected<NodeStatus> checkPreConditions();
   void checkPostConditions(NodeStatus status);
@@ -324,6 +336,28 @@ private:
 template <typename T>
 inline Result TreeNode::getInput(const std::string& key, T& destination) const
 {
+  // address the special case where T is an enum
+  auto ParseString = [this](const std::string& str) -> T
+  {
+    if constexpr (std::is_enum_v<T> && !std::is_same_v<T, NodeStatus>)
+    {
+      auto it = config_.enums->find(str);
+      // conversion available
+      if( it != config_.enums->end() )
+      {
+        return static_cast<T>(it->second);
+      }
+      else {
+        // hopefully str contains a number that can be parsed. May throw
+        return static_cast<T>(convertFromString<int>(str));
+      }
+    }
+    else {
+      return convertFromString<T>(str);
+    }
+  };
+
+
   auto remap_it = config_.input_ports.find(key);
   if (remap_it == config_.input_ports.end())
   {
@@ -335,28 +369,27 @@ inline Result TreeNode::getInput(const std::string& key, T& destination) const
   auto remapped_res = getRemappedKey(key, remap_it->second);
   try
   {
+    // pure string, not a blackboard key
     if (!remapped_res)
     {
-      destination = convertFromString<T>(remap_it->second);
+      destination = ParseString(remap_it->second);
       return {};
     }
     const auto& remapped_key = remapped_res.value();
 
     if (!config_.blackboard)
     {
-      return nonstd::make_unexpected("getInput() trying to access a Blackboard(BB) "
-                                     "entry, "
-                                     "but BB is invalid");
+      return nonstd::make_unexpected("getInput(): trying to access an invalid Blackboard");
     }
 
-    std::unique_lock<std::mutex> entry_lock(config_.blackboard->entryMutex());
+    std::unique_lock entry_lock(config_.blackboard->entryMutex());
     const Any* val = config_.blackboard->getAny(static_cast<std::string>(remapped_key));
     if (val && !val->empty())
     {
       if (!std::is_same_v<T, std::string> &&
           val->type() == typeid(std::string))
       {
-        destination = convertFromString<T>(val->cast<std::string>());
+        destination = ParseString(val->cast<std::string>());
       }
       else
       {
@@ -366,9 +399,8 @@ inline Result TreeNode::getInput(const std::string& key, T& destination) const
     }
 
     return nonstd::make_unexpected(StrCat("getInput() failed because it was unable to "
-                                          "find the "
-                                          "key [",
-                                          key, "] remapped to [", remapped_key, "]"));
+                                          "find the key [", key, "] remapped to [",
+                                          remapped_key, "]"));
   }
   catch (std::exception& err)
   {
@@ -418,10 +450,12 @@ inline void assignDefaultRemapping(NodeConfig& config)
     const auto direction = it.second.direction();
     if (direction != PortDirection::OUTPUT)
     {
+      // PortDirection::{INPUT,INOUT}
       config.input_ports[port_name] = "=";
     }
     if (direction != PortDirection::INPUT)
     {
+      // PortDirection::{OUTPUT,INOUT}
       config.output_ports[port_name] = "=";
     }
   }

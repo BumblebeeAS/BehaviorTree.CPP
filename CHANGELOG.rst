@@ -2,6 +2,105 @@
 Changelog for package behaviortree_cpp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+4.1.1 (2023-03-29)
+------------------
+* adding sqlite logger
+* fix warning
+* better cmake
+* ManualSelector removed
+* magic_enum updated
+* fix issue `#530 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/530>`_: use convertFromString in scripting assignments
+* added unit test
+* files moved
+* fix groot2 publisher
+* minor fixes in blackboard
+* fix XML: Subtree should remember the remapped ports
+* add the ability to load substitution rules from JSON
+* Update README.md
+* Contributors: Davide Faconti
+
+4.1.0 (2023-03-18)
+------------------
+* temporary disable codeql
+* Groot2 interface (`#528 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/528>`_)
+  * refactored groot2 interface
+  * protocol updated
+* merging groot2 publisher
+* add observer
+* prepare 4.1
+* Update README.md
+* fix issue `#525 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/525>`_ when ReactiveSequence contains skipped children
+* fix reactive sequence (issue `#526 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/526>`_ and `#525 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/525>`_)
+* better test
+* add cast to ENUMS in ports
+* changes ported from 4.1
+* fix samples
+* better include paths
+* Control node and Decorators RUNNING before first child
+* blackboard: update getKeys and add mutex to scripting
+* add [[nodiscard]] and some othe minor changes
+* add screenshot
+* change the behavior of tickOnce to actually loop is wake up signal is… (`#522 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/522>`_)
+  * change the behavior of tickOnce to actually loop is wake up signal is received
+  * fix warning
+* Cmake conan (`#521 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/521>`_)
+  * boost coroutine substituted with minicoro. 3rd party updates
+  * cmake refactoring + conan
+  * fix cmake
+  * fix build with conan and change CI
+* fix CI in ROS1 (`#519 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/519>`_)
+* fix alloc-dealloc-mismatch for _storage.str.data (`#518 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/518>`_)
+* Fix issue `#515 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/515>`_: reactive sequence not skipped correctly
+* Fix issue `#517 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/517>`_
+* Merge branch 'master' of github.com:BehaviorTree/BehaviorTree.CPP
+* fix issue `#492 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/492>`_ (Threads::Threads)
+* Fix boost dependency in package.xml (`#512 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/512>`_)
+  `libboost-coroutine-dev` has been merged into rosdistro on February 21st
+  2023. Link to merge request: https://github.com/ros/rosdistro/pull/35789/.
+* fix compilation
+* revert breaking change
+* Merge branch 'master' of github.com:BehaviorTree/BehaviorTree.CPP
+* make default value of port optional, to allow empty strings
+* Contributors: Alberto Soragna, Bart Keulen, Davide Faconti
+
+4.0.2 (2023-02-17)
+------------------
+* fix issue `#501 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/501>`_
+* fix issue `#505 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/505>`_
+* solve issue `#506 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/506>`_
+* prevent useless exception catcking
+* fix issue `#507 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/507>`_
+* adding the uid to the log to uniquely identify the nodes (`#502 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/502>`_)
+* fix in SharedLibrary and cosmetic changes to the code
+* using tinyxml ErrorStr() instead of ErrorName() to get more info about missing file (`#497 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/497>`_)
+* Fixed use of ros_pkg for ROS1 applications (`#483 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/483>`_)
+* Fix error message StdCoutLogger -> MinitraceLogger (`#495 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/495>`_)
+* Fix boost dependency in package.xml (`#493 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/493>`_)
+  Co-authored-by: Bart Keulen <b.keulen@avular.com>
+* support Enums in string conversion
+* fix issue 489
+* updated example. Demonstrate pass by reference
+* lexy updated
+* rename haltChildren to resetChildren
+* revert `#329 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/329>`_
+* Merge branch 'master' of github.com:BehaviorTree/BehaviorTree.CPP
+* Small improvements (`#479 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/479>`_)
+  * Make message for allowed port names more explicit
+  Also throw an exception for unknown port direction rather than using
+  `PortDirection::INOUT`.
+  * Small code improvements
+  * Remove code without effect
+* Fix some renaming for V4 (`#480 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/480>`_)
+* Define NodeConfiguration for BT3 compatibility (`#477 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/477>`_)
+* Implement `#404 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/404>`_ to solve `#435 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/435>`_ (gtest not found)
+* fix issue `#474 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/474>`_ Make libraries dependencies private
+* fix issue `#413 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/413>`_ (Delay logic)
+* change suggested in `#444 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/444>`_
+* add XML converter
+* Add CodeQL workflow (`#471 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/471>`_)
+* Update README.md
+* Contributors: Ana, Bart Keulen, Christian Henkel, Davide Faconti, Gaël Écorchard, Jorge, Mahmoud Farshbafdoustar, Norawit Nangsue
+
 4.0.1 (2022-11-19)
 ------------------
 * version 4.X

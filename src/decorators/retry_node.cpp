@@ -50,22 +50,26 @@ NodeStatus RetryNode::tick()
   }
 
   bool do_loop = try_count_ < max_attempts_ || max_attempts_ == -1;
+
+  if(status() == NodeStatus::IDLE)
+  {
+    all_skipped_ = true;
+  }
+  setStatus(NodeStatus::RUNNING);
+
   while (do_loop)
   {
     NodeStatus prev_status = child_node_->status();
     NodeStatus child_status = child_node_->executeTick();
 
     // switch to RUNNING state as soon as you find an active child
-    if (child_status != NodeStatus::SKIPPED)
-    {
-      setStatus(NodeStatus::RUNNING);
-    }
+    all_skipped_ &= (child_status == NodeStatus::SKIPPED);
 
     switch (child_status)
     {
       case NodeStatus::SUCCESS: {
         try_count_ = 0;
-        haltChild();
+        resetChild();
         return (NodeStatus::SUCCESS);
       }
 
@@ -73,7 +77,7 @@ NodeStatus RetryNode::tick()
         try_count_++;
         do_loop = try_count_ < max_attempts_ || max_attempts_ == -1;
 
-        haltChild();
+        resetChild();
 
         // Return the execution flow if the child is async,
         // to make this interruptable.
@@ -90,6 +94,8 @@ NodeStatus RetryNode::tick()
       }
 
       case NodeStatus::SKIPPED: {
+        // to allow it to be skipped again, we must reset the node
+        resetChild();
         // the child has been skipped. Slip this too
         return NodeStatus::SKIPPED;
       }
@@ -101,7 +107,7 @@ NodeStatus RetryNode::tick()
   }
 
   try_count_ = 0;
-  return NodeStatus::FAILURE;
+  return all_skipped_ ? NodeStatus::SKIPPED : NodeStatus::FAILURE;
 }
 
 }   // namespace BT

@@ -43,39 +43,43 @@ int main()
   factory.registerBehaviorTreeFromText(xml_text);
   auto tree = factory.createTree("MainTree");
 
-  // helper function to print the tree
+  // Helper function to print the tree.
   BT::printTreeRecursively(tree.rootNode());
 
+  // The purpose of the observer is to save some statistics about the number of times
+  // a certain node returns SUCCESS or FAILURE.
+  // This is particularly useful to create unit tests and to check if
+  // a certain set of transitions happened as expected
   BT::TreeObserver observer(tree);
 
+  // Print the unique ID and the corresponding human readable path
+  // Path is also expected to be unique.
   std::map<uint16_t, std::string> ordered_UID_to_path;
-  for(const auto& [name, uid]: observer.pathToUID()) {
+  for (const auto& [name, uid] : observer.pathToUID())
+  {
     ordered_UID_to_path[uid] = name;
   }
 
-  for(const auto& [uid, name]: ordered_UID_to_path) {
+  for (const auto& [uid, name] : ordered_UID_to_path)
+  {
     std::cout << uid << " -> " << name << std::endl;
   }
 
-  // Tick multiple times, until action_B is finally ticked.
-  const auto& action_B_stats = observer.getStatistics("last_action");
+  tree.tickWhileRunning();
 
-  while(action_B_stats.tick_count == 0) {
-    tree.tickOnce();
-  }
+  // You can access a specific statistic, using is full path or the UID
+  const auto& last_action_stats = observer.getStatistics("last_action");
+  assert(last_action_stats.transitions_count > 0);
 
   std::cout << "----------------" << std::endl;
-
-  for(const auto& [uid, name]: ordered_UID_to_path) {
+  // print all the statistics
+  for (const auto& [uid, name] : ordered_UID_to_path)
+  {
     const auto& stats = observer.getStatistics(uid);
 
-    std::cout << "[" << name
-              << "] \tT/S/F:  " << stats.tick_count
-              << "/" << stats.success_count
-              << "/" << stats.failure_count
-              << std::endl;
+    std::cout << "[" << name << "] \tT/S/F:  " << stats.transitions_count << "/"
+              << stats.success_count << "/" << stats.failure_count << std::endl;
   }
-
 
   return 0;
 }

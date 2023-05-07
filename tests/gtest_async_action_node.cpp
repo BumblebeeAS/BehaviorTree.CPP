@@ -48,8 +48,8 @@ struct NodeStatusFixture : public testing::WithParamInterface<BT::NodeStatus>,
 };
 
 INSTANTIATE_TEST_SUITE_P(/**/, NodeStatusFixture,
-                        testing::Values(BT::NodeStatus::SUCCESS,
-                                        BT::NodeStatus::FAILURE));
+                         testing::Values(BT::NodeStatus::SUCCESS,
+                                         BT::NodeStatus::FAILURE));
 
 TEST_P(NodeStatusFixture, normal_routine)
 {

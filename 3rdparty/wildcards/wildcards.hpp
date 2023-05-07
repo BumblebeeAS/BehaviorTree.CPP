@@ -1192,13 +1192,10 @@ case is_alt_state::escape:
 state = is_alt_state::next;
 break;
 default:
-#if cfg_HAS_FULL_FEATURED_CONSTEXPR14
+
 throw std::logic_error(
 "The program execution should never end up here throwing this exception");
-#else
-return throw_logic_error(
-p, "The program execution should never end up here throwing this exception");
-#endif
+
 }
 p = cx::next(p);
 }

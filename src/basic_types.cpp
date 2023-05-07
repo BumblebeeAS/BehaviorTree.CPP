@@ -25,7 +25,7 @@ std::string toStr<NodeStatus>(NodeStatus status)
   return "";
 }
 
-std::string toStr(std::string value)
+std::string toStr(const std::string &value)
 {
   return value;
 }
@@ -107,7 +107,11 @@ template <>
 int convertFromString<int>(StringView str)
 {
   int result = 0;
-  std::from_chars(str.data(), str.data() + str.size(), result);
+  auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+  if(ec != std::errc())
+  {
+    throw RuntimeError(StrCat("Can't convert string [", str, "] to int"));
+  }
   return result;
 }
 
@@ -115,7 +119,11 @@ template <>
 long convertFromString<long>(StringView str)
 {
   long result = 0;
-  std::from_chars(str.data(), str.data() + str.size(), result);
+  auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+  if(ec != std::errc())
+  {
+    throw RuntimeError(StrCat("Can't convert string [", str, "] to long"));
+  }
   return result;
 }
 
@@ -123,7 +131,11 @@ template <>
 unsigned convertFromString<unsigned>(StringView str)
 {
   unsigned result = 0;
-  std::from_chars(str.data(), str.data() + str.size(), result);
+  auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+  if(ec != std::errc())
+  {
+    throw RuntimeError(StrCat("Can't convert string [", str, "] to unsigned"));
+  }
   return result;
 }
 
@@ -131,7 +143,11 @@ template <>
 unsigned long convertFromString<unsigned long>(StringView str)
 {
   unsigned long result = 0;
-  std::from_chars(str.data(), str.data() + str.size(), result);
+  auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+  if(ec != std::errc())
+  {
+    throw RuntimeError(StrCat("Can't convert string [", str, "] to unsigned long"));
+  }
   return result;
 }
 
@@ -226,6 +242,9 @@ NodeStatus convertFromString<NodeStatus>(StringView str)
     return NodeStatus::SUCCESS;
   if (str == "FAILURE")
     return NodeStatus::FAILURE;
+  if (str == "SKIPPED")
+    return NodeStatus::SKIPPED;
+
   throw RuntimeError(std::string("Cannot convert this to NodeStatus: ") +
                      static_cast<std::string>(str));
 }
@@ -340,13 +359,17 @@ const std::string& PortInfo::description() const
   return description_;
 }
 
-const std::string& PortInfo::defaultValue() const
+std::optional<std::string> PortInfo::defaultValue() const
 {
   return default_value_;
 }
 
 bool IsAllowedPortName(StringView str)
 {
+  if( str == "_autoremap")
+  {
+    return true;
+  }
   if (str.empty())
   {
     return false;

@@ -70,6 +70,12 @@ NodeStatus ParallelNode::tick()
     throw LogicError("Number of children is less than threshold. Can never fail.");
   }
 
+  if(status() == NodeStatus::IDLE)
+  {
+    all_skipped_ = true;
+  }
+  setStatus(NodeStatus::RUNNING);
+
   // Routing the tree according to the sequence node's logic:
   for (size_t i = 0; i < children_count; i++)
   {
@@ -82,9 +88,16 @@ NodeStatus ParallelNode::tick()
         in_skip_list ? prev_status : child_node->executeTick();
 
     // switch to RUNNING state as soon as you find an active child
-    if (child_status != NodeStatus::SKIPPED)
+    all_skipped_ &= (child_status == NodeStatus::SKIPPED);
+
+    if (child_node->registrationName() == "Log")
     {
-      setStatus(NodeStatus::RUNNING);
+      if(!in_skip_list)
+      {
+        skip_list_.insert(i);
+      }
+
+      continue;
     }
 
     if (child_node->registrationName() == "Log")
@@ -106,7 +119,7 @@ NodeStatus ParallelNode::tick()
         if (success_children_num == successThreshold())
         {
           skip_list_.clear();
-          haltChildren();
+          resetChildren();
           return NodeStatus::SUCCESS;
         }
       }
@@ -122,7 +135,7 @@ NodeStatus ParallelNode::tick()
             (failure_children_num == failureThreshold()))
         {
           skip_list_.clear();
-          haltChildren();
+          resetChildren();
           return NodeStatus::FAILURE;
         }
       }
@@ -144,7 +157,7 @@ NodeStatus ParallelNode::tick()
     }
   }
   // Skip if ALL the nodes have been skipped
-  return status() == (NodeStatus::RUNNING) ? NodeStatus::RUNNING : NodeStatus::SKIPPED;
+  return all_skipped_ ? NodeStatus::SKIPPED : NodeStatus::RUNNING;
 }
 
 void ParallelNode::halt()

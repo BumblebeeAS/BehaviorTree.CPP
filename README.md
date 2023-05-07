@@ -7,7 +7,7 @@
 [![LGTM Grade](https://img.shields.io/lgtm/grade/cpp/github/BehaviorTree/BehaviorTree.CPP)](https://lgtm.com/projects/g/BehaviorTree/BehaviorTree.CPP/context:cpp)
 ![Discourse topics](https://img.shields.io/discourse/topics?server=https%3A%2F%2Fdiscourse.behaviortree.dev)
 
-# BehaviorTree.CPP 4.0
+# BehaviorTree.CPP 4.1
 
 <p align="center"><img width=350 src="animated.svg"></p>
 
@@ -17,11 +17,11 @@ It was designed to be flexible, easy to use, reactive and fast.
 Even if our main use-case is __robotics__, you can use this library to build
 __AI for games__, or to replace Finite State Machines.
 
-There are few features that make __BehaviorTree.CPP__ unique, when compared to other implementations:
+There are few features which make __BehaviorTree.CPP__ unique, when compared to other implementations:
 
 - It makes __asynchronous Actions__, i.e. non-blocking, a first-class citizen.
 
-- You can build __reactive__ behaviors that execute multiple Actions concurrently.
+- You can build __reactive__ behaviors that execute multiple Actions concurrently (orthogonality).
 
 - Trees are defined using a Domain Specific __scripting language__ (based on XML), and can be loaded at run-time; in other words, even if written in C++, the morphology of the Trees is _not_ hard-coded.
 
@@ -49,65 +49,53 @@ Version 3.8 of the software can be found in the branch
 That branch might receive bug fixes, but the new features will be implemented
 only in the master branch.
 
-## Commercial support
-
-Are you using BT.CPP in your commercial product and you need technical support / consulting?
-You can contact the main author dfaconti@aurynrobotics.com to discuss your use case and needs.
-
-# Design principles
-
-The main goal of this project is to create a Behavior Tree implementation
-that uses the principles of Model Driven Development to separate the role
-of the __Component Developer__ from the __Behavior Designer__.
-
-In practice, this means that:
-
-- Custom TreeNodes must be reusable building blocks.
- You should be able to implement them once and reuse them to build many behaviors.
-
-- To build a Behavior Tree out of TreeNodes, the Behavior Designer must
-not need to read nor to modify the C++ source code..
-
-- Complex Behaviours must be composable using Subtrees.
-
 # GUI Editor
 
 Editing a BehaviorTree is as simple as editing a XML file in your favourite text editor.
 
 If you are looking for a more fancy graphical user interface (and I know you do) check
-[Groot](https://github.com/BehaviorTree/Groot) out.
+[Groot2](https://www.behaviortree.dev/groot) out.
 
 ![Groot screenshot](docs/groot-screenshot.png)
 
-# How to compile (Ubuntu)
+# How to compile
 
-Please note that **Ubuntu 18.04 is not supported anymore in version 4.X**. Ubuntu 20.04 or later is required.
+**BT.CPP** requires a compile that supports c++17.
 
-First, install the following dependencies (optional, but recommended):
+Three build systems are supported:
 
-     sudo apt-get install libzmq3-dev libboost-coroutine-dev libncurses5-dev libncursesw5-dev
+- **catkin**, if you use ROS
+- **colcon (ament)**, if you use ROS2
+- **conan** otherwise (Linux/Windows).
+- **straight cmake** if you want to be personal responsible for depndencies :)
 
-To compile and install the library, from the BehaviorTree.CPP folder, execute:
+Compiling with [conan](https://conan.io/):
 
-     mkdir build; cd build
-     cmake ..
-     make
-     sudo make install
+Assuming that you are in the **parent** directory of `BehaviorTree.CPP`:
 
-If you want to use BT.CPP in your application a typical **CMakeLists.txt** file
-will look like this:
-
-```cmake
-cmake_minimum_required(VERSION 3.10.2)
-project(hello_BT)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-find_package(behaviortree_cpp)
-
-add_executable(${PROJECT_NAME} "hello_BT.cpp")
-target_link_libraries(${PROJECT_NAME} BT::behaviortree_cpp)
 ```
+mkdir build; cd build
+conan install ../BehaviorTree.CPP --output-folder=. --build=missing
+cmake ../BehaviorTree.CPP -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake
+cmake --build . --parallel
+```
+
+If you have dependencies such as ZeroMQ and SQlite already installed and you don't want to
+use conan, simply type:
+
+```
+mkdir build; cd build
+cmake ../BehaviorTree.CPP
+cmake --build . --parallel
+```
+
+If you want to use BT.CPP in your application, please refer to the
+example here: https://github.com/BehaviorTree/btcpp_sample .
+
+# Commercial support
+
+Are you using BT.CPP in your commercial product and you need technical support / consulting?
+You can contact the main author dfaconti@aurynrobotics.com to discuss your use case and needs.
 
 # License
 

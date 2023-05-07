@@ -43,6 +43,11 @@ NodeStatus RepeatNode::tick()
   }
 
   bool do_loop = repeat_count_ < num_cycles_ || num_cycles_ == -1;
+  if(status() == NodeStatus::IDLE)
+  {
+    all_skipped_ = true;
+  }
+  setStatus(NodeStatus::RUNNING);
 
   while (do_loop)
   {
@@ -50,10 +55,7 @@ NodeStatus RepeatNode::tick()
     NodeStatus child_status = child_node_->executeTick();
 
     // switch to RUNNING state as soon as you find an active child
-    if (child_status != NodeStatus::SKIPPED)
-    {
-      setStatus(NodeStatus::RUNNING);
-    }
+    all_skipped_ &= (child_status == NodeStatus::SKIPPED);
 
     switch (child_status)
     {
@@ -61,7 +63,7 @@ NodeStatus RepeatNode::tick()
         repeat_count_++;
         do_loop = repeat_count_ < num_cycles_ || num_cycles_ == -1;
 
-        haltChild();
+        resetChild();
 
         // Return the execution flow if the child is async,
         // to make this interruptable.
@@ -75,7 +77,7 @@ NodeStatus RepeatNode::tick()
 
       case NodeStatus::FAILURE: {
         repeat_count_ = 0;
-        haltChild();
+        resetChild();
         return (NodeStatus::FAILURE);
       }
 
@@ -84,9 +86,11 @@ NodeStatus RepeatNode::tick()
       }
 
       case NodeStatus::SKIPPED: {
+        // to allow it to be skipped again, we must reset the node
+        resetChild();
         // the child has been skipped. Skip the decorator too.
         // Don't reset the counter, though !
-        return NodeStatus::IDLE;
+        return NodeStatus::SKIPPED;
       }
       case NodeStatus::IDLE: {
         throw LogicError("[", name(), "]: A children should not return IDLE");
@@ -95,7 +99,7 @@ NodeStatus RepeatNode::tick()
   }
 
   repeat_count_ = 0;
-  return NodeStatus::SUCCESS;
+  return all_skipped_ ? NodeStatus::SKIPPED : NodeStatus::SUCCESS;
 }
 
 void RepeatNode::halt()

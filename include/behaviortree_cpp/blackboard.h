@@ -1,5 +1,4 @@
-#ifndef BLACKBOARD_H
-#define BLACKBOARD_H
+#pragma once
 
 #include <iostream>
 #include <string>
@@ -50,12 +49,15 @@ public:
   {
     std::unique_lock<std::mutex> lock(mutex_);
     // search first if this port was remapped
-    if (auto parent = parent_bb_.lock())
+    if (!internal_to_external_.empty())
     {
-      auto remapping_it = internal_to_external_.find(key);
-      if (remapping_it != internal_to_external_.end())
+      if (auto parent = parent_bb_.lock())
       {
-        return parent->getAny(remapping_it->second);
+        auto remapping_it = internal_to_external_.find(key);
+        if (remapping_it != internal_to_external_.end())
+        {
+          return parent->getAny(remapping_it->second);
+        }
       }
     }
     auto it = storage_.find(key);
@@ -64,18 +66,9 @@ public:
 
   Any* getAny(const std::string& key)
   {
-    std::unique_lock<std::mutex> lock(mutex_);
-    // search first if this port was remapped
-    if (auto parent = parent_bb_.lock())
-    {
-      auto remapping_it = internal_to_external_.find(key);
-      if (remapping_it != internal_to_external_.end())
-      {
-        return parent->getAny(remapping_it->second);
-      }
-    }
-    auto it = storage_.find(key);
-    return (it == storage_.end()) ? nullptr : &(it->second.value);
+    // "Avoid Duplication in const and Non-const Member Function,"
+    // on p. 23, in Item 3 "Use const whenever possible," in Effective C++, 3d ed
+    return const_cast<Any*>(static_cast<const Blackboard&>(*this).getAny(key));
   }
 
   /** Return true if the entry with the given key was found.
@@ -113,19 +106,22 @@ public:
   template <typename T>
   void set(const std::string& key, const T& value)
   {
-    std::unique_lock<std::mutex> lock_entry(entry_mutex_);
-    std::unique_lock<std::mutex> lock(mutex_);
+    std::unique_lock lock_entry(entry_mutex_);
+    std::unique_lock lock(mutex_);
 
     // search first if this port was remapped.
     // Change the parent_bb_ in that case
-    auto remapping_it = internal_to_external_.find(key);
-    if (remapping_it != internal_to_external_.end())
+    if (!internal_to_external_.empty())
     {
-      const auto& remapped_key = remapping_it->second;
-      if (auto parent = parent_bb_.lock())
+      auto remapping_it = internal_to_external_.find(key);
+      if (remapping_it != internal_to_external_.end())
       {
-        parent->set(remapped_key, value);
-        return;
+        const auto& remapped_key = remapping_it->second;
+        if (auto parent = parent_bb_.lock())
+        {
+          parent->set(remapped_key, value);
+          return;
+        }
       }
     }
 
@@ -186,8 +182,8 @@ public:
         {
           debugMessage();
 
-          throw LogicError("Blackboard::set() failed for key [",
-                           key, "]: once declared, the type of a port "
+          throw LogicError("Blackboard::set() failed for key [", key,
+                           "]: once declared, the type of a port "
                            "shall not change. "
                            "Declared type [",
                            BT::demangle(previous_type), "] != current type [",
@@ -198,7 +194,7 @@ public:
     }
   }
 
-  void setPortInfo(std::string key, const PortInfo& info);
+  void setPortInfo(const std::string& key, const PortInfo& info);
 
   const PortInfo* portInfo(const std::string& key);
 
@@ -206,18 +202,17 @@ public:
 
   void debugMessage() const;
 
-  std::vector<StringView> getKeys() const;
+  std::vector<StringView> getKeys(bool include_remapped = true) const;
 
   void clear()
   {
     std::unique_lock<std::mutex> lock(mutex_);
     storage_.clear();
-    internal_to_external_.clear();
   }
 
   // Lock this mutex before using get() and getAny() and unlock it while you have
   // done using the value.
-  std::mutex& entryMutex()
+  std::recursive_mutex& entryMutex() const
   {
     return entry_mutex_;
   }
@@ -237,12 +232,10 @@ private:
   };
 
   mutable std::mutex mutex_;
-  mutable std::mutex entry_mutex_;
+  mutable std::recursive_mutex entry_mutex_;
   std::unordered_map<std::string, Entry> storage_;
   std::weak_ptr<Blackboard> parent_bb_;
   std::unordered_map<std::string, std::string> internal_to_external_;
 };
 
 }   // namespace BT
-
-#endif   // BLACKBOARD_H
