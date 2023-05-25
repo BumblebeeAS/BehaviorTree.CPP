@@ -122,7 +122,6 @@ list(APPEND BT_SOURCE
     src/loggers/bt_file_logger_v2.cpp
     src/loggers/bt_minitrace_logger.cpp
     src/loggers/bt_observer.cpp
-    src/loggers/bt_zmq_publisher.cpp
 
     3rdparty/tinyxml2/tinyxml2.cpp
     3rdparty/minitrace/minitrace.cpp
