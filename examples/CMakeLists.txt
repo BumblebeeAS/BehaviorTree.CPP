@@ -21,8 +21,8 @@ CompileExample("t09_scripting")
 CompileExample("t10_observer")
 CompileExample("t11_replace_rules")
 
-if( ZMQ_FOUND )
-    CompileExample("t12_groot_howto")
+if(BTCPP_GROOT_INTERFACE AND BTCPP_SQLITE_LOGGING)
+CompileExample("t12_groot_howto")
 endif()
 
 CompileExample("ex01_wrap_legacy")

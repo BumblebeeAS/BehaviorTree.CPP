@@ -1,5 +1,5 @@
 ![License MIT](https://img.shields.io/github/license/BumblebeeAS/BehaviorTree.CPP?color=blue)
-![Version](https://img.shields.io/badge/version-4.0-blue.svg)
+![Version](https://img.shields.io/badge/version-4.2-blue.svg)
 [![cmake Ubuntu](https://github.com/BumblebeeAS/BehaviorTree.CPP/actions/workflows/cmake_ubuntu.yml/badge.svg)](https://github.com/BumblebeeAS/BehaviorTree.CPP/actions/workflows/cmake_ubuntu.yml)
 [![cmake Windows](https://github.com/BumblebeeAS/BehaviorTree.CPP/actions/workflows/cmake_windows.yml/badge.svg)](https://github.com/BumblebeeAS/BehaviorTree.CPP/actions/workflows/cmake_windows.yml)
 [![ros1](https://github.com/BumblebeeAS/BehaviorTree.CPP/workflows/ros1/badge.svg?branch=master)](https://github.com/BumblebeeAS/BehaviorTree.CPP/actions?query=workflow%3Aros1)
@@ -7,7 +7,7 @@
 [![LGTM Grade](https://img.shields.io/lgtm/grade/cpp/github/BehaviorTree/BehaviorTree.CPP)](https://lgtm.com/projects/g/BehaviorTree/BehaviorTree.CPP/context:cpp)
 ![Discourse topics](https://img.shields.io/discourse/topics?server=https%3A%2F%2Fdiscourse.behaviortree.dev)
 
-# BehaviorTree.CPP 4.1
+# BehaviorTree.CPP 4.2
 
 <p align="center"><img width=350 src="animated.svg"></p>
 
@@ -105,7 +105,7 @@ Copyright (c) 2014-2018 Michele Colledanchise
 
 Copyright (c) 2018-2019 Davide Faconti, Eurecat
 
-Copyright (c) 2019-2022 Davide Faconti
+Copyright (c) 2019-2023 Davide Faconti
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

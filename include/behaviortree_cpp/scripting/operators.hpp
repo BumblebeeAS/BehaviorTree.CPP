@@ -63,11 +63,22 @@ struct ExprName : ExprBase
     //search first in the enums table
     if (env.enums)
     {
-      auto enum_ptr = env.enums->find(name);
-      if (enum_ptr != env.enums->end())
-      {
-        return Any(double(enum_ptr->second));
-      }
+        //search first in the enums table
+        if(env.enums)
+        {
+            auto enum_ptr = env.enums->find(name);
+            if( enum_ptr != env.enums->end() )
+            {
+                return Any(double(enum_ptr->second));
+            }
+        }
+        // search now in the variables table
+        auto any_ref = env.vars->getAnyLocked(name);
+        if( !any_ref )
+        {
+          throw std::runtime_error("Variable not found");
+        }
+        return *any_ref.get();
     }
     // search now in the variables table
     std::unique_lock entry_lock(env.vars->entryMutex());
@@ -368,7 +379,119 @@ struct ExprAssignment : ExprBase
     auto varname = dynamic_cast<ExprName*>(lhs.get());
     if (!varname)
     {
-      throw std::runtime_error("Assignment left operand not an lvalue");
+        assign_create,
+        assign_existing,
+        assign_plus,
+        assign_minus,
+        assign_times,
+        assign_div
+    } op;
+
+    expr_ptr lhs, rhs;
+
+    explicit ExprAssignment(expr_ptr _lhs, op_t op, expr_ptr _rhs) :
+        op(op), lhs(LEXY_MOV(_lhs)), rhs(LEXY_MOV(_rhs)) {}
+
+    Any evaluate(Environment& env) const override
+    {
+        auto varname = dynamic_cast<ExprName*>(lhs.get());
+        if (!varname)
+        {
+            throw std::runtime_error("Assignment left operand not an lvalue");
+        }
+        const auto& key = varname->name;
+
+        Blackboard::Entry* entry = env.vars->getEntry(key);
+        if( !entry )
+        {
+            // variable doesn't exist, create it if using operator assign_create
+            if(op == assign_create)
+            {
+                env.vars->setPortInfo(key, PortInfo());
+                entry = env.vars->getEntry(key);
+            }
+            else {
+                // fail otherwise
+                throw std::runtime_error("Can't create a new variable");
+            }
+        }
+        auto value = rhs->evaluate(env);
+
+        std::scoped_lock lock(entry->entry_mutex);
+        auto any_ptr = &entry->value;
+
+        if( op == assign_create || op == assign_existing )
+        {
+            // special case first: string to other type
+            // check if we can use the StringConverter
+            if(value.isString() && !any_ptr->empty() && !any_ptr->isString())
+            {
+                auto const str = value.cast<std::string>();
+                if(auto converter = env.vars->portInfo(key)->converter())
+                {
+                    *any_ptr = converter(str);
+                }
+                else {
+                    auto msg = StrCat("Type mismatch in scripting:",
+                                      " can't convert the string '", str,
+                                      "' to the type expected by that port.\n"
+                                      "Have you implemented the relevant "
+                                      "convertFromString<T>() ?");
+                    throw RuntimeError(msg);
+                }
+            }
+            else {
+                try {
+                    value.copyInto(*any_ptr);
+                }
+                catch (std::runtime_error&) {
+                    throw RuntimeError("A script failed to convert the given type "
+                                       "to the one expected by that port.");
+                }
+            }
+            return *any_ptr;
+        }
+
+        if( any_ptr->empty() )
+        {
+            throw std::runtime_error("This assignment operator can't be used with an empty variable");
+        }
+
+        // temporary use
+        Any temp_variable = *any_ptr;
+        if( value.isNumber() )
+        {
+            if( !temp_variable.isNumber() )
+            {
+                throw std::runtime_error("Assignment operator can't be used with an empty variable");
+            }
+
+            auto lv = temp_variable.cast<double>();
+            auto rv = value.cast<double>();
+            switch(op)
+            {
+            case assign_plus:  temp_variable = Any(lv+rv); break;
+            case assign_minus: temp_variable = Any(lv-rv); break;
+            case assign_times: temp_variable = Any(lv*rv); break;
+            case assign_div:   temp_variable = Any(lv/rv); break;
+            default: {}
+            }
+        }
+        else if( value.isString() )
+        {
+            if( op == assign_plus )
+            {
+                auto lv = temp_variable.cast<std::string>();
+                auto rv = value.cast<std::string>();
+                temp_variable = Any(lv+rv);
+            }
+            else {
+                throw std::runtime_error("Operator not supported for strings");
+            }
+        }
+
+        temp_variable.copyInto(*any_ptr);
+        return *any_ptr;
     }
     const auto& key = varname->name;
 

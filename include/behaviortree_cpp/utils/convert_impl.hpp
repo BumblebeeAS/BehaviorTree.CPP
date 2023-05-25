@@ -16,10 +16,13 @@
 #include <exception>
 #include "simple_string.hpp"
 
-namespace SafeAny
-{
-namespace details
-{
+#undef max
+#undef min
+
+namespace SafeAny{
+
+namespace details{
+
 template <typename BoolCondition>
 using EnableIf = typename std::enable_if<BoolCondition::value, void>::type;
 
