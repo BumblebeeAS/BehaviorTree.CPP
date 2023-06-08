@@ -1,4 +1,11 @@
-include_directories( ../include )
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  tf2_ros
+)
+
+include_directories( ../include
+    ${catkin_INCLUDE_DIRS}
+)
 
 # compile as static libraries
 
@@ -9,27 +16,27 @@ add_library(bt_sample_nodes STATIC
     dummy_nodes.cpp
     movebase_node.cpp )
 
-target_link_libraries(bt_sample_nodes PRIVATE ${BTCPP_LIBRARY})
+target_link_libraries(bt_sample_nodes PRIVATE ${BTCPP_LIBRARY} ${catkin_LIBRARIES})
 set_target_properties(bt_sample_nodes PROPERTIES ARCHIVE_OUTPUT_DIRECTORY
     ${BTCPP_LIB_DESTINATION} )
 
 # to create a plugin, compile them in this way instead
 
 add_library(crossdoor_nodes_dyn SHARED crossdoor_nodes.cpp )
-target_link_libraries(crossdoor_nodes_dyn PRIVATE ${BTCPP_LIBRARY})
+target_link_libraries(crossdoor_nodes_dyn PRIVATE ${BTCPP_LIBRARY} ${catkin_LIBRARIES})
 target_compile_definitions(crossdoor_nodes_dyn PRIVATE  BT_PLUGIN_EXPORT )
 set_target_properties(crossdoor_nodes_dyn PROPERTIES LIBRARY_OUTPUT_DIRECTORY
     ${BTCPP_BIN_DESTINATION} )
 
 add_library(dummy_nodes_dyn     SHARED dummy_nodes.cpp )
-target_link_libraries(dummy_nodes_dyn PRIVATE ${BTCPP_LIBRARY})
+target_link_libraries(dummy_nodes_dyn PRIVATE ${BTCPP_LIBRARY} ${catkin_LIBRARIES})
 target_compile_definitions(dummy_nodes_dyn  PRIVATE BT_PLUGIN_EXPORT)
 set_target_properties(dummy_nodes_dyn PROPERTIES LIBRARY_OUTPUT_DIRECTORY
     ${BTCPP_BIN_DESTINATION} )
 
 
 add_library(movebase_node_dyn   SHARED movebase_node.cpp )
-target_link_libraries(movebase_node_dyn PRIVATE ${BTCPP_LIBRARY})
+target_link_libraries(movebase_node_dyn PRIVATE ${BTCPP_LIBRARY} ${catkin_LIBRARIES})
 target_compile_definitions(movebase_node_dyn PRIVATE  BT_PLUGIN_EXPORT )
 set_target_properties(movebase_node_dyn PROPERTIES LIBRARY_OUTPUT_DIRECTORY
     ${BTCPP_BIN_DESTINATION} )

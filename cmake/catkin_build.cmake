@@ -15,7 +15,7 @@ find_package(catkin REQUIRED COMPONENTS roslib roscpp)
 catkin_package(
         INCLUDE_DIRS include
         LIBRARIES ${BTCPP_LIBRARY}
-        CATKIN_DEPENDS roslib roscpp)
+        CATKIN_DEPENDS roslib roscpp tf2_ros)
 
 set(BTCPP_EXTRA_INCLUDE_DIRS ${catkin_INCLUDE_DIRS} )
 

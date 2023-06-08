@@ -395,7 +395,7 @@ inline Result TreeNode::getInput(const std::string& key, T& destination) const
         if (std::regex_match(std::string(token), re)) {
           // Remove ${ and }
           auto token_trimmed = token.substr(2, token.size() - 3);
-          auto val = config_.blackboard->getAny(std::string(token_trimmed));
+          auto val = config_.blackboard->getAnyLocked(std::string(token_trimmed)).get();
           if (!val || val->empty())
           {
             std::cout << "Error: could not find value for key: "
