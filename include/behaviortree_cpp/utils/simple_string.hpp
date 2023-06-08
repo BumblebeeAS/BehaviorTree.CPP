@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <limits>
 #include <cstdint>
+#include <string_view>
 
 namespace SafeAny
 {
@@ -17,6 +18,9 @@ class SimpleString
 {
 public:
   SimpleString(const std::string& str) : SimpleString(str.data(), str.size())
+  {}
+
+  SimpleString(const std::string_view& str) : SimpleString(str.data(), str.size())
   {}
 
   SimpleString(const SimpleString& other) : SimpleString(other.data(), other.size())
@@ -132,7 +136,7 @@ private:
     std::size_t size;
   };
 
-  constexpr static std::size_t CAPACITY = 15; // sizeof(String) - 1);
+  constexpr static std::size_t CAPACITY = 15;   // sizeof(String) - 1);
   constexpr static std::size_t IS_LONG_BIT = 1 << 7;
   constexpr static std::size_t LONG_MASK = (~std::size_t(0)) >> 1;
 
