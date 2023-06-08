@@ -95,12 +95,13 @@ constexpr const char* PLUGIN_SYMBOL = "BT_RegisterNodesFromPlugin";
 #else
 #define BTCPP_EXPORT_NH static
 #endif
-#define BT_REGISTER_NODES_WITH_NH(factory, nh, buffer)                                                       \
-  BTCPP_EXPORT_NH   void BT_RegisterNodesFromPluginNh(BT::BehaviorTreeFactory& factory, ros::NodeHandle& nh, \
-  std::shared_ptr<tf2_ros::Buffer>& tf_buffer)
+#define BT_REGISTER_NODES_WITH_NH(factory, nh, buffer)                                   \
+  BTCPP_EXPORT_NH void BT_RegisterNodesFromPluginNh(                                     \
+      BT::BehaviorTreeFactory& factory, ros::NodeHandle& nh,                             \
+      std::shared_ptr<tf2_ros::Buffer>& tf_buffer)
 
 constexpr const char* PLUGIN_NH_SYMBOL = "BT_RegisterNodesFromPluginNh";
-bool WildcardMatch(const std::string &str, StringView filter);
+bool WildcardMatch(const std::string& str, StringView filter);
 
 /**
  * @brief Struct used to store a tree.
@@ -203,13 +204,18 @@ public:
   ///
   /// move_nodes = tree.getNodesByPath<MoveBaseNode>("move_*");
   ///
-  template <typename NodeType = BT::TreeNode> [[nodiscard]]
-  std::vector<const TreeNode*> getNodesByPath(StringView wildcard_filter) {
+  template <typename NodeType = BT::TreeNode>
+  [[nodiscard]] std::vector<const TreeNode*> getNodesByPath(StringView wildcard_filter)
+  {
     std::vector<const TreeNode*> nodes;
-    for (auto const& subtree : subtrees) {
-      for (auto const& node : subtree->nodes) {
-        if(auto node_recast = dynamic_cast<const NodeType*>(node.get())) {
-          if(WildcardMatch(node->fullPath(), wildcard_filter)) {
+    for (auto const& subtree : subtrees)
+    {
+      for (auto const& node : subtree->nodes)
+      {
+        if (auto node_recast = dynamic_cast<const NodeType*>(node.get()))
+        {
+          if (WildcardMatch(node->fullPath(), wildcard_filter))
+          {
             nodes.push_back(node.get());
           }
         }
@@ -314,7 +320,7 @@ public:
      * @param tf_buffer std::shared_ptr<tf2_ros::Buffer>& to be passed to the function BT_REGISTER_NODES_WITH_NH
      */
   void registerFromPluginWithNh(const std::string& file_path, ros::NodeHandle& nh,
-  std::shared_ptr<tf2_ros::Buffer>& tf_buffer);
+                                std::shared_ptr<tf2_ros::Buffer>& tf_buffer);
 #endif
   /**
      * @brief registerFromROSPlugins finds all shared libraries that export ROS plugins for behaviortree_cpp, and calls registerFromPlugin for each library.

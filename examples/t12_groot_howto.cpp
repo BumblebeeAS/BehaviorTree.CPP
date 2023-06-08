@@ -57,7 +57,6 @@ int main()
   factory.registerBehaviorTreeFromText(xml_text);
   auto tree = factory.createTree("MainTree");
 
-
   std::cout << "----------- XML file  ----------\n"
             << BT::WriteTreeToXML(tree, false) << "--------------------------------\n";
 
@@ -74,7 +73,7 @@ int main()
   bool append_to_database = true;
   BT::SqliteLogger sqlite_logger(tree, "t12_sqlitelog.btsql", append_to_database);
 
-  while(1)
+  while (1)
   {
     std::cout << "Start" << std::endl;
     cross_door.reset();

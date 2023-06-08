@@ -22,7 +22,7 @@ namespace BT
  */
 class FileLogger2 : public StatusChangeLogger
 {
-  public:
+public:
   FileLogger2(const Tree& tree, std::filesystem::path const& filepath);
 
   virtual ~FileLogger2() override;
@@ -58,4 +58,3 @@ private:
 };
 
 }   // namespace BT
-

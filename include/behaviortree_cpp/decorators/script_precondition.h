@@ -49,16 +49,17 @@ private:
     }
 
     Ast::Environment env = {config().blackboard, config().enums};
-    if(_executor(env).cast<bool>())
+    if (_executor(env).cast<bool>())
     {
       auto const child_status = child_node_->executeTick();
-      if(isStatusCompleted(child_status))
+      if (isStatusCompleted(child_status))
       {
         resetChild();
       }
       return child_status;
     }
-    else {
+    else
+    {
       return else_return;
     }
   }

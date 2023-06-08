@@ -427,5 +427,5 @@ TEST(FailingParallel, FailingParallel)
   auto state = tree.tickWhileRunning();
   // since at least one succeeded.
   ASSERT_EQ(NodeStatus::SUCCESS, state);
-  ASSERT_EQ( 1, observer.getStatistics("second").failure_count);
+  ASSERT_EQ(1, observer.getStatistics("second").failure_count);
 }

@@ -24,7 +24,6 @@ static const char* reactive_xml_text = R"(
 </root>
 )";
 
-
 TEST(Reactive, RunningChildren)
 {
   BT::BehaviorTreeFactory factory;
@@ -35,8 +34,8 @@ TEST(Reactive, RunningChildren)
 
   NodeStatus status = NodeStatus::IDLE;
 
-  int count=0;
-  while(!BT::isStatusCompleted(status) && count<100)
+  int count = 0;
+  while (!BT::isStatusCompleted(status) && count < 100)
   {
     count++;
     status = tree.tickExactlyOnce();
@@ -54,5 +53,3 @@ TEST(Reactive, RunningChildren)
   ASSERT_EQ(counters[4], 1);
   ASSERT_EQ(counters[5], 1);
 }
-
-

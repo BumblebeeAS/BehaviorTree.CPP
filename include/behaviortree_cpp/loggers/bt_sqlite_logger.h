@@ -57,7 +57,6 @@ private:
   std::atomic_bool loop_ = true;
 
   void writerLoop();
-
 };
 
 }   // namespace BT

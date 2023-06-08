@@ -47,15 +47,16 @@ public:
 //--------------------------------------------------------------
 class PrintNumber : public SyncActionNode
 {
-  public:
+public:
   PrintNumber(const std::string& name, const NodeConfig& config) :
-        SyncActionNode(name, config)
+    SyncActionNode(name, config)
   {}
 
   NodeStatus tick() override
   {
     double value;
-    if (getInput("value", value)) {
+    if (getInput("value", value))
+    {
       std::cout << "PrintNumber: " << value << "\n";
       return NodeStatus::SUCCESS;
     }
@@ -124,7 +125,7 @@ static const char* xml_tree = R"(
 int main()
 {
   BehaviorTreeFactory factory;
-  
+
   factory.registerNodeType<LoopNode<Pose2D>>("LoopPose");
 
   factory.registerNodeType<UseWaypoint>("UseWaypoint");

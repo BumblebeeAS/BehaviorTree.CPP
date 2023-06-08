@@ -19,10 +19,10 @@
 #undef max
 #undef min
 
-namespace SafeAny{
-
-namespace details{
-
+namespace SafeAny
+{
+namespace details
+{
 template <typename BoolCondition>
 using EnableIf = typename std::enable_if<BoolCondition::value, void>::type;
 

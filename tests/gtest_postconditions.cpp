@@ -60,5 +60,3 @@ TEST(PostConditions, Issue539)
   ASSERT_EQ(tree.rootBlackboard()->get<int>("x"), 5);
   ASSERT_EQ(tree.rootBlackboard()->get<int>("y"), 5);
 }
-
-

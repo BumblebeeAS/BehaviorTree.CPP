@@ -70,7 +70,8 @@ private:
 
   std::thread heartbeat_thread_;
 
-  enum {
+  enum
+  {
     IDLE_FROM_SUCCESS = 10 + static_cast<int>(NodeStatus::SUCCESS),
     IDLE_FROM_FAILURE = 10 + static_cast<int>(NodeStatus::FAILURE),
     IDLE_FROM_RUNNING = 10 + static_cast<int>(NodeStatus::RUNNING)

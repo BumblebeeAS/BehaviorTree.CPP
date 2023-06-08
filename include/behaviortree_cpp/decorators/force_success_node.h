@@ -39,7 +39,7 @@ inline NodeStatus ForceSuccessNode::tick()
 
   const NodeStatus child_status = child_node_->executeTick();
 
-  if(isStatusCompleted(child_status))
+  if (isStatusCompleted(child_status))
   {
     resetChild();
     return NodeStatus::SUCCESS;

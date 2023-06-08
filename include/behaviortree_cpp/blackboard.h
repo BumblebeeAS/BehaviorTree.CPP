@@ -15,7 +15,6 @@
 
 namespace BT
 {
-
 /// This type contains a pointer to Any, protected
 /// with a locked mutex as long as the object is in scope
 using AnyPtrLocked = LockedPtr<Any>;
@@ -26,7 +25,6 @@ using AnyPtrLocked = LockedPtr<Any>;
  */
 class Blackboard
 {
-
 public:
   typedef std::shared_ptr<Blackboard> Ptr;
 
@@ -36,7 +34,6 @@ protected:
   {}
 
 public:
-
   struct Entry
   {
     Any value;
@@ -47,7 +44,7 @@ public:
     {}
 
     Entry(Any&& other_any, const PortInfo& info) :
-          value(std::move(other_any)), port_info(info)
+      value(std::move(other_any)), port_info(info)
     {}
   };
 
@@ -84,12 +81,12 @@ public:
   {
     // "Avoid Duplication in const and Non-const Member Function,"
     // on p. 23, in Item 3 "Use const whenever possible," in Effective C++, 3d ed
-    return const_cast<Entry*>( static_cast<const Blackboard &>(*this).getEntry(key));
+    return const_cast<Entry*>(static_cast<const Blackboard&>(*this).getEntry(key));
   }
 
   [[nodiscard]] AnyPtrLocked getAnyLocked(const std::string& key)
   {
-    if(auto entry = getEntry(key))
+    if (auto entry = getEntry(key))
     {
       return AnyPtrLocked(&entry->value, &entry->entry_mutex);
     }
@@ -98,21 +95,20 @@ public:
 
   [[nodiscard]] AnyPtrLocked getAnyLocked(const std::string& key) const
   {
-    if(auto entry = getEntry(key))
+    if (auto entry = getEntry(key))
     {
-      return AnyPtrLocked(&entry->value,  const_cast<std::mutex*>(&entry->entry_mutex));
+      return AnyPtrLocked(&entry->value, const_cast<std::mutex*>(&entry->entry_mutex));
     }
     return {};
   }
 
-  [[deprecated("Use getAnyLocked instead")]]
-  const Any* getAny(const std::string& key) const
+  [[deprecated("Use getAnyLocked instead")]] const Any*
+  getAny(const std::string& key) const
   {
     return getAnyLocked(key).get();
   }
 
-  [[deprecated("Use getAnyLocked instead")]]
-  Any* getAny(const std::string& key)
+  [[deprecated("Use getAnyLocked instead")]] Any* getAny(const std::string& key)
   {
     return const_cast<Any*>(getAnyLocked(key).get());
   }
@@ -120,8 +116,8 @@ public:
   /** Return true if the entry with the given key was found.
    *  Note that this method may throw an exception if the cast to T failed.
    */
-  template <typename T> [[nodiscard]]
-  bool get(const std::string& key, T& value) const
+  template <typename T>
+  [[nodiscard]] bool get(const std::string& key, T& value) const
   {
     if (auto any_ref = getAnyLocked(key))
     {
@@ -134,15 +130,16 @@ public:
   /**
    * Version of get() that throws if it fails.
    */
-  template <typename T> [[nodiscard]]
-  T get(const std::string& key) const
+  template <typename T>
+  [[nodiscard]] T get(const std::string& key) const
   {
     if (auto any_ref = getAnyLocked(key))
     {
       const auto& any = any_ref.get();
-      if(any->empty())
+      if (any->empty())
       {
-        throw RuntimeError("Blackboard::get() error. Entry [", key, "] hasn't been initialized, yet");
+        throw RuntimeError("Blackboard::get() error. Entry [", key,
+                           "] hasn't been initialized, yet");
       }
       return any_ref.get()->cast<T>();
     }
@@ -252,8 +249,8 @@ public:
     storage_.clear();
   }
 
-  [[deprecated("Use getAnyLocked to access safely an Entry")]]
-  std::recursive_mutex& entryMutex() const
+  [[deprecated("Use getAnyLocked to access safely an Entry")]] std::recursive_mutex&
+  entryMutex() const
   {
     return entry_mutex_;
   }

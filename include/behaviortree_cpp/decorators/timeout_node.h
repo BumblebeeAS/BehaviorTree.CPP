@@ -105,7 +105,7 @@ private:
     else
     {
       const NodeStatus child_status = child()->executeTick();
-      if(isStatusCompleted(child_status))
+      if (isStatusCompleted(child_status))
       {
         timeout_started_ = false;
         timeout_mutex_.unlock();

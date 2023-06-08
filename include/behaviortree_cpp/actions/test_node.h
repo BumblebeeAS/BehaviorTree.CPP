@@ -61,8 +61,7 @@ class TestNode : public BT::StatefulActionNode
 public:
   TestNode(const std::string& name, const NodeConfig& config,
            TestNodeConfig test_config = {}) :
-    StatefulActionNode(name, config),
-        _test_config(std::move(test_config))
+    StatefulActionNode(name, config), _test_config(std::move(test_config))
   {
     setRegistrationID("TestNode");
   }

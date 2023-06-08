@@ -13,18 +13,20 @@ namespace BT
  * you must destroy this object as soon as the pointer was used.
  */
 template <typename T>
-class LockedPtr {
-  public:
-
+class LockedPtr
+{
+public:
   LockedPtr() = default;
 
-  LockedPtr(const T* obj, std::mutex* obj_mutex):
-        ref_(obj), mutex_(obj_mutex) {
+  LockedPtr(const T* obj, std::mutex* obj_mutex) : ref_(obj), mutex_(obj_mutex)
+  {
     mutex_->lock();
   }
 
-  ~LockedPtr() {
-    if(mutex_) {
+  ~LockedPtr()
+  {
+    if (mutex_)
+    {
       mutex_->unlock();
     }
   }
@@ -32,44 +34,52 @@ class LockedPtr {
   LockedPtr(LockedPtr const&) = delete;
   LockedPtr& operator=(LockedPtr const&) = delete;
 
-  LockedPtr(LockedPtr && other) {
+  LockedPtr(LockedPtr&& other)
+  {
     std::swap(ref_, other.ref_);
     std::swap(mutex_, other.mutex_);
   }
 
-  LockedPtr& operator=(LockedPtr&& other) {
+  LockedPtr& operator=(LockedPtr&& other)
+  {
     std::swap(ref_, other.ref_);
     std::swap(mutex_, other.mutex_);
   }
 
-  operator bool() const {
+  operator bool() const
+  {
     return ref_ != nullptr;
   }
 
-  void lock() {
-    if(mutex_) {
+  void lock()
+  {
+    if (mutex_)
+    {
       mutex_->lock();
     }
   }
 
-  void unlock() {
-    if(mutex_) {
+  void unlock()
+  {
+    if (mutex_)
+    {
       mutex_->unlock();
     }
   }
 
-  bool empty() const {
+  bool empty() const
+  {
     return ref_ == nullptr;
   }
 
-  const T* get() const{
+  const T* get() const
+  {
     return ref_;
   }
 
-  private:
+private:
   const T* ref_ = nullptr;
   std::mutex* mutex_ = nullptr;
 };
 
-
-}
+}   // namespace BT

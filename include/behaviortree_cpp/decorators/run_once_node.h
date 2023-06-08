@@ -70,7 +70,8 @@ inline NodeStatus RunOnceNode::tick()
   setStatus(NodeStatus::RUNNING);
   const NodeStatus status = child_node_->executeTick();
 
-  if(isStatusCompleted(status)) {
+  if (isStatusCompleted(status))
+  {
     already_ticked_ = true;
     returned_status_ = status;
     resetChild();
