@@ -17,6 +17,7 @@
 #include <exception>
 #include <mutex>
 #include <map>
+#include <regex>
 
 #include "behaviortree_cpp/utils/signal.h"
 #include "behaviortree_cpp/basic_types.h"
@@ -379,6 +380,55 @@ inline Result TreeNode::getInput(const std::string& key, T& destination) const
   // address the special case where T is an enum
   auto ParseString = [this](const std::string& str) -> T
   {
+    if (str.find('#') != std::string::npos) {
+      std::string res;
+      // if string contains value from blackboard, convert it first
+      auto tokens = BT::splitString(str, ';');
+      std::regex re("^(\\#\\{).+\\}");
+      bool all_valid = true;
+      for (const auto& token : tokens) {
+        if (std::regex_match(std::string(token), re)) {
+          // Remove ${ and }
+          auto token_trimmed = token.substr(2, token.size() - 3);
+          auto val = config().blackboard->getAnyLocked(std::string(token_trimmed)).get();
+          if (!val || val->empty())
+          {
+            std::cout << "Error: could not find value for key: "
+                      << token_trimmed << std::endl;
+            all_valid = false;
+            break;
+          }
+          const auto& type = val->type();
+          if (type == typeid(int)) {
+            res += std::to_string(val->cast<int>()).append(";");
+          } else if (type == typeid(double)) {
+            res += std::to_string(val->cast<double>()).append(";");
+          } else if (type == typeid(bool)) {
+            res += std::to_string(val->cast<bool>()).append(";");
+          } else if (type == typeid(float)) {
+            res += std::to_string(val->cast<float>()).append(";");
+          } else if (type == typeid(long)) {
+            res += std::to_string(val->cast<long>()).append(";");
+          } else if (type == typeid(std::string)) {
+            res += val->cast<std::string>().append(";");
+          } else {
+            std::cout << "Error: could not find value for key: "
+                      << token_trimmed << std::endl;
+            all_valid = false;
+            break;
+          }
+        } else {
+          res += std::string(token).append(";");
+        }
+      }
+      res = res.substr(0, res.size() - 1);
+      std::cout << "Converted: " << str << " to " << res << std::endl;
+
+      if (all_valid) {
+        return convertFromString<T>(res);
+      }
+    }
+
     if constexpr (std::is_enum_v<T> && !std::is_same_v<T, NodeStatus>)
     {
       auto it = config().enums->find(str);

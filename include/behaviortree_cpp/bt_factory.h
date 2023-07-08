@@ -26,6 +26,10 @@
 #include "behaviortree_cpp/contrib/magic_enum.hpp"
 #include "behaviortree_cpp/behavior_tree.h"
 
+#ifdef USING_ROS
+#include <ros/node_handle.h>
+#include <tf2_ros/buffer.h>
+#endif
 namespace BT
 {
 /// The term "Builder" refers to the Builder Pattern (https://en.wikipedia.org/wiki/Builder_pattern)
@@ -80,6 +84,24 @@ inline TreeNodeManifest CreateManifest(const std::string& ID,
 
 constexpr const char* PLUGIN_SYMBOL = "BT_RegisterNodesFromPlugin";
 
+#ifdef BT_PLUGIN_EXPORT_WITH_NODEHANDLE
+
+#if defined(_WIN32)
+#define BTCPP_EXPORT_NH extern "C" __declspec(dllexport)
+#else
+// Unix-like OSes
+#define BTCPP_EXPORT_NH extern "C" __attribute__((visibility("default")))
+#endif
+
+#else
+#define BTCPP_EXPORT_NH static
+#endif
+#define BT_REGISTER_NODES_WITH_NH(factory, nh, buffer)                                   \
+  BTCPP_EXPORT_NH void BT_RegisterNodesFromPluginNh(                                     \
+      BT::BehaviorTreeFactory& factory, ros::NodeHandle& nh,                             \
+      std::shared_ptr<tf2_ros::Buffer>& tf_buffer)
+
+constexpr const char* PLUGIN_NH_SYMBOL = "BT_RegisterNodesFromPluginNh";
 bool WildcardMatch(const std::string &str, StringView filter);
 
 /**
@@ -265,6 +287,17 @@ public:
      */
   void registerFromPlugin(const std::string& file_path);
 
+#ifdef USING_ROS
+  /**
+     * @brief registerFromPluginWithNh load a shared library and execute the function BT_REGISTER_NODES_WITH_NH (see macro).
+     *
+     * @param file_path path of the file
+     * @param nh        NodeHandle to be passed to the function BT_REGISTER_NODES_WITH_NH
+     * @param tf_buffer std::shared_ptr<tf2_ros::Buffer>& to be passed to the function BT_REGISTER_NODES_WITH_NH
+     */
+  void registerFromPluginWithNh(const std::string& file_path, ros::NodeHandle& nh,
+                                std::shared_ptr<tf2_ros::Buffer>& tf_buffer);
+#endif
   /**
      * @brief registerFromROSPlugins finds all shared libraries that export ROS plugins for behaviortree_cpp, and calls registerFromPlugin for each library.
      * @throws If not compiled with ROS support or if the library cannot load for any reason

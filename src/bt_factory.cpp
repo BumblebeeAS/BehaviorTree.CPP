@@ -20,6 +20,8 @@
 
 #ifdef USING_ROS
 #include <ros/package.h>
+#include <ros/node_handle.h>
+#include <tf2_ros/buffer.h>
 #endif
 
 namespace BT
@@ -190,6 +192,29 @@ void BehaviorTreeFactory::registerFromPlugin(const std::string& file_path)
               << PLUGIN_SYMBOL << "]" << std::endl;
   }
 }
+
+#ifdef USING_ROS
+void BehaviorTreeFactory::registerFromPluginWithNh(const std::string& file_path, ros::NodeHandle& nh,
+std::shared_ptr<tf2_ros::Buffer>& tf_buffer)
+{
+  BT::SharedLibrary loader;
+  loader.load(file_path);
+  typedef void (*Func)(BehaviorTreeFactory&, ros::NodeHandle&,
+                       std::shared_ptr<tf2_ros::Buffer>&);
+
+  if (loader.hasSymbol(PLUGIN_NH_SYMBOL))
+  {
+    Func func = (Func)loader.getSymbol(PLUGIN_NH_SYMBOL);
+    std::cout<< "Loading library [" << file_path << "]" << std::endl;
+    func(*this, nh, tf_buffer);
+  }
+  else
+  {
+    std::cout << "ERROR loading library [" << file_path << "]: can't find symbol ["
+              << PLUGIN_NH_SYMBOL << "]" << std::endl;
+  }
+}
+#endif
 
 #ifdef USING_ROS
 

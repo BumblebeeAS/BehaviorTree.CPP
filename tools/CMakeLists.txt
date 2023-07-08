@@ -1,5 +1,10 @@
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+)
 
-include_directories(${PROJECT_SOURCE_DIR}/3rdparty)
+include_directories(${PROJECT_SOURCE_DIR}/3rdparty
+        ${catkin_INCLUDE_DIRS}
+)
 
 add_executable(bt3_log_cat         bt_log_cat.cpp )
 target_link_libraries(bt3_log_cat  ${BTCPP_LIBRARY} )
@@ -14,7 +19,7 @@ if( ZMQ_FOUND )
 endif()
 
 add_executable(bt3_plugin_manifest         bt_plugin_manifest.cpp )
-target_link_libraries(bt3_plugin_manifest  ${BTCPP_LIBRARY} )
+target_link_libraries(bt3_plugin_manifest  ${BTCPP_LIBRARY} ${catkin_LIBRARIES})
 install(TARGETS bt3_plugin_manifest
         DESTINATION ${BTCPP_BIN_DESTINATION} )
 

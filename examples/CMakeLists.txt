@@ -1,10 +1,19 @@
-include_directories( ../sample_nodes )
+cmake_minimum_required(VERSION 3.5.1)
+
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  tf2_ros
+)
+
+include_directories( ../sample_nodes 
+    ${catkin_INCLUDE_DIRS}
+)
 
 set(CMAKE_DEBUG_POSTFIX "")
 
 function(CompileExample name)
     add_executable(${name}  ${name}.cpp )
-    target_link_libraries(${name} ${BTCPP_LIBRARY}  bt_sample_nodes )
+    target_link_libraries(${name} ${BTCPP_LIBRARY}  bt_sample_nodes ${catkin_LIBRARIES})
 endfunction()
 
 
