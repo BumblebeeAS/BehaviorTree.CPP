@@ -422,7 +422,7 @@ inline Result TreeNode::getInput(const std::string& key, T& destination) const
         }
       }
       res = res.substr(0, res.size() - 1);
-      std::cout << "Converted: " << str << " to " << res << std::endl;
+      // std::cout << "Converted: " << str << " to " << res << std::endl;
 
       if (all_valid) {
         return convertFromString<T>(res);
@@ -461,7 +461,7 @@ inline Result TreeNode::getInput(const std::string& key, T& destination) const
   // BUT, it the port type is a string, then an empty string might be
   // a valid value
   const std::string& port_value_str = remap_it->second;
-  if(port_value_str.empty() && config().manifest)
+  if(port_value_str.empty() && config().manifest && config().manifest->ports.size() > 0)
   {
     const auto& port_manifest = config().manifest->ports.at(key);
     const auto& default_value = port_manifest.defaultValue();
