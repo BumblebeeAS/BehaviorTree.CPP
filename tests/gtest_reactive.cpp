@@ -34,8 +34,8 @@ TEST(Reactive, RunningChildren)
 
   NodeStatus status = NodeStatus::IDLE;
 
-  int count=0;
-  while(!BT::isStatusCompleted(status) && count<100)
+  int count = 0;
+  while (!BT::isStatusCompleted(status) && count < 100)
   {
     count++;
     status = tree.tickExactlyOnce();
@@ -53,7 +53,6 @@ TEST(Reactive, RunningChildren)
   ASSERT_EQ(counters[4], 1);
   ASSERT_EQ(counters[5], 1);
 }
-
 
 TEST(Reactive, Issue587)
 {
@@ -86,5 +85,3 @@ TEST(Reactive, Issue587)
 
   ASSERT_EQ(counters[0], 1);
 }
-
-

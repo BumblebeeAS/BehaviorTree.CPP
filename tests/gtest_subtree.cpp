@@ -290,15 +290,17 @@ class ModifyPose : public BT::SyncActionNode
 {
 public:
   // Any TreeNode with ports must have a constructor with this signature
-  ModifyPose(const std::string& name, const BT::NodeConfig& config)
-    : SyncActionNode(name, config)
+  ModifyPose(const std::string& name, const BT::NodeConfig& config) :
+    SyncActionNode(name, config)
   {}
 
-  static BT::PortsList providedPorts() {
-    return{ BT::BidirectionalPort<Pose2D>("pose") };
+  static BT::PortsList providedPorts()
+  {
+    return {BT::BidirectionalPort<Pose2D>("pose")};
   }
 
-  BT::NodeStatus tick() override {
+  BT::NodeStatus tick() override
+  {
     Pose2D pose;
     getInput("pose", pose);
     pose.theta *= 2;
@@ -306,7 +308,6 @@ public:
     return NodeStatus::SUCCESS;
   }
 };
-
 
 TEST(SubTree, StringConversions_Issue530)
 {
@@ -340,7 +341,8 @@ public:
 
   BT::NodeStatus tick() override
   {
-    std::cout << "tick:" << config().blackboard->get<std::string>("ros_node") << std::endl;
+    std::cout << "tick:" << config().blackboard->get<std::string>("ros_node")
+              << std::endl;
     return BT::NodeStatus::SUCCESS;
   }
   static BT::PortsList providedPorts()
@@ -395,7 +397,6 @@ TEST(SubTree, SubtreeIssue563)
   ASSERT_EQ(ret, NodeStatus::SUCCESS);
 }
 
-
 TEST(SubTree, SubtreeIssue592)
 {
   static const char* xml_text = R"(
@@ -417,7 +418,6 @@ TEST(SubTree, SubtreeIssue592)
   </BehaviorTree>
 
 </root>)";
-
 
   BehaviorTreeFactory factory;
   std::array<int, 1> counters;

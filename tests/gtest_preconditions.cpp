@@ -138,7 +138,6 @@ TEST(Preconditions, Basic)
   ASSERT_EQ(counters[3], 1);   // executed
 }
 
-
 TEST(Preconditions, Issue533)
 {
   BehaviorTreeFactory factory;
@@ -176,18 +175,17 @@ TEST(Preconditions, Issue533)
   ASSERT_EQ(counters[2], 1);
 }
 
-
-class CoroTestNode: public BT::CoroActionNode
+class CoroTestNode : public BT::CoroActionNode
 {
 public:
-  CoroTestNode(const std::string& node_name,
-               const BT::NodeConfig& config) :
+  CoroTestNode(const std::string& node_name, const BT::NodeConfig& config) :
     BT::CoroActionNode(node_name, config)
   {}
 
   virtual BT::NodeStatus tick() override
   {
-    for(int i=0; i<10; i++) {
+    for (int i = 0; i < 10; i++)
+    {
       times_ticked++;
       setStatusRunningAndYield();
     }
@@ -201,7 +199,6 @@ public:
 
   int times_ticked = 0;
 };
-
 
 TEST(Preconditions, Issue585)
 {

@@ -434,9 +434,9 @@ TEST(Parallel, FailingParallel)
   auto state = tree.tickWhileRunning();
   // since at least one succeeded.
   ASSERT_EQ(NodeStatus::SUCCESS, state);
-  ASSERT_EQ( 1, observer.getStatistics("first").success_count);
-  ASSERT_EQ( 1, observer.getStatistics("second").failure_count);
-  ASSERT_EQ( 0, observer.getStatistics("third").failure_count);
+  ASSERT_EQ(1, observer.getStatistics("first").success_count);
+  ASSERT_EQ(1, observer.getStatistics("second").failure_count);
+  ASSERT_EQ(0, observer.getStatistics("third").failure_count);
 }
 
 TEST(Parallel, ParallelAll)
@@ -471,9 +471,9 @@ TEST(Parallel, ParallelAll)
 
     auto state = tree.tickWhileRunning();
     ASSERT_EQ(NodeStatus::FAILURE, state);
-    ASSERT_EQ( 1, observer.getStatistics("first").failure_count);
-    ASSERT_EQ( 1, observer.getStatistics("second").success_count);
-    ASSERT_EQ( 1, observer.getStatistics("third").success_count);
+    ASSERT_EQ(1, observer.getStatistics("first").failure_count);
+    ASSERT_EQ(1, observer.getStatistics("second").success_count);
+    ASSERT_EQ(1, observer.getStatistics("third").success_count);
   }
 
   {
@@ -492,9 +492,9 @@ TEST(Parallel, ParallelAll)
 
     auto state = tree.tickWhileRunning();
     ASSERT_EQ(NodeStatus::SUCCESS, state);
-    ASSERT_EQ( 1, observer.getStatistics("first").failure_count);
-    ASSERT_EQ( 1, observer.getStatistics("second").success_count);
-    ASSERT_EQ( 1, observer.getStatistics("third").success_count);
+    ASSERT_EQ(1, observer.getStatistics("first").failure_count);
+    ASSERT_EQ(1, observer.getStatistics("second").success_count);
+    ASSERT_EQ(1, observer.getStatistics("third").success_count);
   }
 }
 

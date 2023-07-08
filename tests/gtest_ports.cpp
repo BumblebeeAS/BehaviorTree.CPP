@@ -177,14 +177,12 @@ TEST(PortTest, IllegalPorts)
   ASSERT_ANY_THROW(factory.registerNodeType<IllegalPorts>("nope"));
 }
 
-
 class ActionVectorIn : public SyncActionNode
 {
 public:
   ActionVectorIn(const std::string& name, const NodeConfig& config,
                  std::vector<double>* states) :
-    SyncActionNode(name, config),
-    states_(states)
+    SyncActionNode(name, config), states_(states)
   {}
 
   NodeStatus tick() override
@@ -197,10 +195,10 @@ public:
   {
     return {BT::InputPort<std::vector<double>>("states")};
   }
+
 private:
   std::vector<double>* states_;
 };
-
 
 TEST(PortTest, SubtreeStringInput_Issue489)
 {
@@ -289,11 +287,11 @@ TEST(PortTest, StrintToEnum)
   ASSERT_EQ(Color::Green, second_node->color);
 }
 
-
 class DefaultTestAction : public SyncActionNode
 {
 public:
-  struct Point2D {
+  struct Point2D
+  {
     int x;
     int y;
   };
@@ -305,17 +303,20 @@ public:
   NodeStatus tick() override
   {
     const int answer = getInput<int>("answer").value();
-    if(answer != 42) {
+    if (answer != 42)
+    {
       return NodeStatus::FAILURE;
     }
 
     const std::string greet = getInput<std::string>("greeting").value();
-    if(greet != "hello") {
+    if (greet != "hello")
+    {
       return NodeStatus::FAILURE;
     }
 
     const Point2D point = getInput<Point2D>("pos").value();
-    if(point.x != 1 || point.y != 2) {
+    if (point.x != 1 || point.y != 2)
+    {
       return NodeStatus::FAILURE;
     }
 
@@ -326,7 +327,7 @@ public:
   {
     return {BT::InputPort<int>("answer", 42, "the answer"),
             BT::InputPort<std::string>("greeting", "hello", "be polite"),
-            BT::InputPort<Point2D>("pos", {1,2}, "where")};
+            BT::InputPort<Point2D>("pos", {1, 2}, "where")};
   }
 
   Color color = Color::Undefined;
@@ -347,5 +348,3 @@ TEST(PortTest, DefaultInput)
   auto status = tree.tickOnce();
   ASSERT_EQ(status, NodeStatus::SUCCESS);
 }
-
-

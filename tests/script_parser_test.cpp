@@ -155,8 +155,10 @@ TEST(ParserTest, Equations)
   EXPECT_ANY_THROW(GetResult("y ^ 5.1").cast<double>());
 
   // test string variables
-  EXPECT_EQ(GetResult("A:='hello'; B:=' '; C:='world'; A+B+C").cast<std::string>(),
-            "hello world");
+  EXPECT_EQ(GetResult("A:='hello'; B:=' '; C:='world'; A+B+C").cast<std::string>(), "hell"
+                                                                                    "o "
+                                                                                    "worl"
+                                                                                    "d");
   EXPECT_EQ(variables->getKeys().size(), 5);
   EXPECT_EQ(variables->get<std::string>("A"), "hello");
   EXPECT_EQ(variables->get<std::string>("B"), " ");
@@ -229,7 +231,6 @@ TEST(ParserTest, Equations)
   EXPECT_EQ(GetResult(" y == x  ||  x == 3 ").cast<int>(), 1);
 }
 
-
 TEST(ParserTest, NotInitializedComparison)
 {
   BT::Ast::Environment environment = {BT::Blackboard::create(), {}};
@@ -282,19 +283,23 @@ TEST(ParserTest, Enums)
   ASSERT_EQ(blackboard->get<int>("color3"), GREEN);
 }
 
-enum DeviceType { BATT=1, CONTROLLER=2 };
+enum DeviceType
+{
+  BATT = 1,
+  CONTROLLER = 2
+};
 
-
-BT::NodeStatus checkLevel(BT::TreeNode &self)
+BT::NodeStatus checkLevel(BT::TreeNode& self)
 {
   double percent = self.getInput<double>("percentage").value();
   DeviceType devType;
   auto res = self.getInput("deviceType", devType);
-  if(!res) {
+  if (!res)
+  {
     throw std::runtime_error(res.error());
   }
 
-  if(devType == DeviceType::BATT)
+  if (devType == DeviceType::BATT)
   {
     self.setOutput("isLowBattery", (percent < 25));
   }
@@ -322,10 +327,10 @@ TEST(ParserTest, Enums_Issue_523)
   </root> )";
 
   factory.registerNodeType<DummyNodes::SaySomething>("SaySomething");
-  factory.registerSimpleCondition("CheckLevel", std::bind(checkLevel, std::placeholders::_1),
-                                  { BT::InputPort("percentage"),
-                                   BT::InputPort("deviceType"),
-                                   BT::OutputPort("isLowBattery")});
+  factory.registerSimpleCondition(
+      "CheckLevel", std::bind(checkLevel, std::placeholders::_1),
+      {BT::InputPort("percentage"), BT::InputPort("deviceType"),
+       BT::OutputPort("isLowBattery")});
 
   factory.registerScriptingEnums<DeviceType>();
 

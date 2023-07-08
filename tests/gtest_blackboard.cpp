@@ -309,10 +309,9 @@ TEST(BlackboardTest, AnyPtrLocked)
   // Safe way to access a pointer
   {
     std::atomic_llong cycles = 0;
-    auto func = [&]()
-    {
+    auto func = [&]() {
       auto start = std::chrono::system_clock::now();
-      while( (std::chrono::system_clock::now() - start) < timeout)
+      while ((std::chrono::system_clock::now() - start) < timeout)
       {
         auto r1 = blackboard->getAnyLocked("testmove");
         auto value_ptr = (r1.get()->cast<long*>());
@@ -321,8 +320,8 @@ TEST(BlackboardTest, AnyPtrLocked)
       }
     };
 
-    auto t1 = std::thread(func); // other thread
-    func(); // this thread
+    auto t1 = std::thread(func);   // other thread
+    func();                        // this thread
     t1.join();
 
     // number of increments and cycles is expected to be the same
@@ -332,10 +331,9 @@ TEST(BlackboardTest, AnyPtrLocked)
   // UNSAFE way to access a pointer
   {
     std::atomic_llong cycles = 0;
-    auto func = [&]()
-    {
+    auto func = [&]() {
       auto start = std::chrono::system_clock::now();
-      while( (std::chrono::system_clock::now() - start) < timeout)
+      while ((std::chrono::system_clock::now() - start) < timeout)
       {
         auto value_ptr = blackboard->get<long*>("testmove");
         (*value_ptr)++;

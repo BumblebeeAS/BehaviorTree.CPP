@@ -387,4 +387,3 @@ TEST_F(ComplexSequenceWithMemoryTest, Conditions1ToFalse)
   ASSERT_EQ(NodeStatus::RUNNING, action_1.status());
   ASSERT_EQ(NodeStatus::IDLE, action_2.status());
 }
-

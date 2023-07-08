@@ -384,8 +384,7 @@ struct ExprComparison : ExprBase
       {
         throw RuntimeError(StrCat("Can't mix different types in Comparison. "
                                   "Left operand [",
-                                  BT::demangle(lhs_v.type()),
-                                  "] right operand [",
+                                  BT::demangle(lhs_v.type()), "] right operand [",
                                   BT::demangle(rhs_v.type()), "]"));
       }
       lhs_v = rhs_v;
@@ -534,8 +533,7 @@ struct ExprAssignment : ExprBase
         catch (RuntimeError&)
         {
           auto msg = StrCat(errorPrefix(), "\nThe right operand has type [",
-                            BT::demangle(value.type()),
-                            "] and can't be converted");
+                            BT::demangle(value.type()), "] and can't be converted");
           throw RuntimeError(msg);
         }
       }

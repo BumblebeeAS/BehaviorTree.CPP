@@ -53,27 +53,24 @@ NodeStatus CrossDoor::smashDoor()
   return NodeStatus::SUCCESS;
 }
 
-void CrossDoor::registerNodes(BT::BehaviorTreeFactory &factory)
+void CrossDoor::registerNodes(BT::BehaviorTreeFactory& factory)
 {
-  factory.registerSimpleCondition(
-      "IsDoorClosed", std::bind(&CrossDoor::isDoorClosed, this));
+  factory.registerSimpleCondition("IsDoorClosed",
+                                  std::bind(&CrossDoor::isDoorClosed, this));
 
-  factory.registerSimpleAction(
-      "PassThroughDoor", std::bind(&CrossDoor::passThroughDoor, this));
+  factory.registerSimpleAction("PassThroughDoor",
+                               std::bind(&CrossDoor::passThroughDoor, this));
 
-  factory.registerSimpleAction(
-      "OpenDoor", std::bind(&CrossDoor::openDoor, this));
+  factory.registerSimpleAction("OpenDoor", std::bind(&CrossDoor::openDoor, this));
 
-  factory.registerSimpleAction(
-      "PickLock", std::bind(&CrossDoor::pickLock, this));
+  factory.registerSimpleAction("PickLock", std::bind(&CrossDoor::pickLock, this));
 
-  factory.registerSimpleCondition(
-      "SmashDoor", std::bind(&CrossDoor::smashDoor, this));
+  factory.registerSimpleCondition("SmashDoor", std::bind(&CrossDoor::smashDoor, this));
 }
 
 void CrossDoor::reset()
 {
-  _door_open   = false;
+  _door_open = false;
   _door_locked = true;
   _pick_attempts = 0;
 }
