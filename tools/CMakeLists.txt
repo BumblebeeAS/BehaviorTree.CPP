@@ -1,6 +1,25 @@
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-)
+find_package(ament_cmake QUIET)
+
+if ( ament_cmake_FOUND )
+
+    add_definitions( -DUSING_ROS2 )
+    message(STATUS "------------------------------------------")
+    message(STATUS "BehaviourTree is being built using AMENT.")
+    message(STATUS "------------------------------------------")
+    find_package(rclcpp REQUIRED)
+
+elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
+
+    add_definitions( -DUSING_ROS )
+    message(STATUS "------------------------------------------")
+    message(STATUS "BehaviourTree is being built using CATKIN.")
+    message(STATUS "------------------------------------------")
+    set(catkin_FOUND TRUE)
+    find_package(catkin REQUIRED COMPONENTS
+        roscpp
+    )
+
+endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/3rdparty
         ${catkin_INCLUDE_DIRS}
