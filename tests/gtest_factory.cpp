@@ -1,7 +1,8 @@
 #include <gtest/gtest.h>
 #include <filesystem>
-#include "action_test_node.h"
-#include "condition_test_node.h"
+#include <string>
+#include <utility>
+#include <vector>
 #include "behaviortree_cpp/xml_parsing.h"
 #include "../sample_nodes/crossdoor_nodes.h"
 #include "../sample_nodes/dummy_nodes.h"
@@ -195,8 +196,8 @@ static const char* xml_ports_subtree = R"(
 
   <BehaviorTree ID="MainTree">
     <Sequence>
-      <Script code = " talk_hello='hello' " />
-      <Script code = " talk_bye='bye bye' " />
+      <Script code = " talk_hello:='hello' " />
+      <Script code = " talk_bye:='bye bye' " />
       <SubTree ID="TalkToMe" hello_msg="{talk_hello}"
                              bye_msg="{talk_bye}"
                              output="{talk_out}" />
@@ -227,12 +228,12 @@ TEST(BehaviorTreeFactory, SubTreeWithRemapping)
   // Should not throw
   tree.tickWhileRunning();
 
-  ASSERT_EQ(main_bb->portInfo("talk_hello")->type(), typeid(std::string));
-  ASSERT_EQ(main_bb->portInfo("talk_bye")->type(), typeid(std::string));
-  ASSERT_EQ(main_bb->portInfo("talk_out")->type(), typeid(std::string));
+  ASSERT_EQ(main_bb->entryInfo("talk_hello")->type(), typeid(std::string));
+  ASSERT_EQ(main_bb->entryInfo("talk_bye")->type(), typeid(std::string));
+  ASSERT_EQ(main_bb->entryInfo("talk_out")->type(), typeid(std::string));
 
-  ASSERT_EQ(talk_bb->portInfo("bye_msg")->type(), typeid(std::string));
-  ASSERT_EQ(talk_bb->portInfo("hello_msg")->type(), typeid(std::string));
+  ASSERT_EQ(talk_bb->entryInfo("bye_msg")->type(), typeid(std::string));
+  ASSERT_EQ(talk_bb->entryInfo("hello_msg")->type(), typeid(std::string));
 
   std::cout << "\n --------------------------------- \n" << std::endl;
   main_bb->debugMessage();
@@ -240,13 +241,13 @@ TEST(BehaviorTreeFactory, SubTreeWithRemapping)
   talk_bb->debugMessage();
   std::cout << "\n --------------------------------- \n" << std::endl;
 
-  ASSERT_EQ(main_bb->portInfo("talk_hello")->type(), typeid(std::string));
-  ASSERT_EQ(main_bb->portInfo("talk_bye")->type(), typeid(std::string));
-  ASSERT_EQ(main_bb->portInfo("talk_out")->type(), typeid(std::string));
+  ASSERT_EQ(main_bb->entryInfo("talk_hello")->type(), typeid(std::string));
+  ASSERT_EQ(main_bb->entryInfo("talk_bye")->type(), typeid(std::string));
+  ASSERT_EQ(main_bb->entryInfo("talk_out")->type(), typeid(std::string));
 
-  ASSERT_EQ(talk_bb->portInfo("bye_msg")->type(), typeid(std::string));
-  ASSERT_EQ(talk_bb->portInfo("hello_msg")->type(), typeid(std::string));
-  ASSERT_EQ(talk_bb->portInfo("output")->type(), typeid(std::string));
+  ASSERT_EQ(talk_bb->entryInfo("bye_msg")->type(), typeid(std::string));
+  ASSERT_EQ(talk_bb->entryInfo("hello_msg")->type(), typeid(std::string));
+  ASSERT_EQ(talk_bb->entryInfo("output")->type(), typeid(std::string));
 
   ASSERT_EQ(main_bb->get<std::string>("talk_hello"), "hello");
   ASSERT_EQ(main_bb->get<std::string>("talk_bye"), "bye bye");
@@ -342,6 +343,23 @@ TEST(
   ASSERT_EQ(NodeStatus::SUCCESS, tree.tickWhileRunning());
 }
 
+TEST(
+    BehaviorTreeFactory,
+    WrongTreeName)
+{
+  const char* xmlA = R"(
+  <root BTCPP_format="4" >
+    <BehaviorTree ID="MainTree">
+      <AlwaysSuccess/>
+    </BehaviorTree>
+  </root> )";
+
+  BehaviorTreeFactory factory;
+
+  factory.registerBehaviorTreeFromText(xmlA);
+  EXPECT_ANY_THROW(auto tree = factory.createTree("Wrong Name"));
+}
+
 TEST(BehaviorTreeReload, ReloadSameTree)
 {
   const char* xmlA = R"(
@@ -371,4 +389,63 @@ TEST(BehaviorTreeReload, ReloadSameTree)
     auto tree = factory.createTree("MainTree");
     ASSERT_EQ(NodeStatus::FAILURE, tree.tickWhileRunning());
   }
+}
+
+KeyValueVector makeTestMetadata()
+{
+  return {
+    std::make_pair<std::string, std::string>("foo", "hello"),
+    std::make_pair<std::string, std::string>("bar", "42"),
+  };
+}
+
+class ActionWithMetadata : public SyncActionNode
+{
+public:
+  ActionWithMetadata(const std::string& name, const NodeConfig& config):
+    SyncActionNode(name, config) {}
+
+  BT::NodeStatus tick() override {
+    return NodeStatus::SUCCESS;
+  }
+
+  static PortsList providedPorts() {
+    return {};
+  }
+
+  static KeyValueVector metadata() {
+    return makeTestMetadata();
+  }
+};
+
+TEST(BehaviorTreeFactory, ManifestMethod)
+{
+  const char* expectedXML = R"(
+        <Action ID="ActionWithMetadata">
+            <MetadataFields>
+                <Metadata foo="hello"/>
+                <Metadata bar="42"/>
+            </MetadataFields>
+        </Action>)";
+
+  BehaviorTreeFactory factory;
+  factory.registerNodeType<ActionWithMetadata>("ActionWithMetadata");
+  const auto& manifest = factory.manifests().at("ActionWithMetadata");
+  EXPECT_EQ(manifest.metadata, makeTestMetadata());
+
+  auto xml = writeTreeNodesModelXML(factory, false);
+  std::cout << xml << std::endl;
+
+  EXPECT_NE(xml.find(expectedXML), std::string::npos);
+}
+
+TEST(BehaviorTreeFactory, addMetadataToManifest)
+{
+  BehaviorTreeFactory factory;
+  factory.registerNodeType<DummyNodes::SaySomething>("SaySomething");
+  const auto& initial_manifest = factory.manifests().at("SaySomething");
+  EXPECT_TRUE(initial_manifest.metadata.empty());
+  factory.addMetadataToManifest("SaySomething", makeTestMetadata());
+  const auto& modified_manifest = factory.manifests().at("SaySomething");
+  EXPECT_EQ(modified_manifest.metadata, makeTestMetadata());
 }

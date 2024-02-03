@@ -5,16 +5,18 @@ set(BT_TESTS
   src/action_test_node.cpp
   src/condition_test_node.cpp
 
+  gtest_any.cpp
   gtest_blackboard.cpp
   gtest_coroutines.cpp
   gtest_decorator.cpp
+  gtest_enums.cpp
   gtest_factory.cpp
   gtest_fallback.cpp
   gtest_parallel.cpp
   gtest_preconditions.cpp
+  gtest_ports.cpp
   gtest_postconditions.cpp
   gtest_match.cpp
-  gtest_ports.cpp
   gtest_json.cpp
   gtest_reactive.cpp
   gtest_sequence.cpp
@@ -56,7 +58,9 @@ else()
     find_package(GTest)
     enable_testing()
 
-    add_executable(${BTCPP_LIBRARY}_test ${BT_TESTS})
+    add_executable(${BTCPP_LIBRARY}_test ${BT_TESTS}
+        gtest_enums.cpp
+        gtest_any.cpp)
     target_link_libraries(${PROJECT_NAME}_test
         ${TEST_DEPENDECIES}
         Threads::Threads

@@ -49,7 +49,8 @@ public:
   SimpleString(const char* input_data) : SimpleString(input_data, strlen(input_data))
   {}
 
-  SimpleString(const char* input_data, std::size_t size)
+
+  SimpleString(const char *input_data, std::size_t size)
   {
     createImpl(input_data, size);
   }
@@ -66,6 +67,10 @@ public:
   std::string toStdString() const
   {
     return size() > 0 ? std::string(data(), size()) : std::string();
+  }
+  std::string_view toStdStringView() const
+  {
+    return size() > 0 ? std::string_view(data(), size()) : std::string_view();
   }
 
   const char* data() const
@@ -139,6 +144,7 @@ private:
   constexpr static std::size_t CAPACITY = 15;   // sizeof(String) - 1);
   constexpr static std::size_t IS_LONG_BIT = 1 << 7;
   constexpr static std::size_t LONG_MASK = (~std::size_t(0)) >> 1;
+  constexpr static std::size_t MAX_SIZE = 100UL*1024UL*1024UL;
 
   union
   {
@@ -154,8 +160,11 @@ private:
 private:
   void createImpl(const char* input_data, std::size_t size)
   {
-    if (size > CAPACITY)
-    {
+    if (size > MAX_SIZE){
+      throw std::invalid_argument("size too large for a simple string");
+    }
+
+    if (size > CAPACITY) {
       _storage.str.size = size;
       _storage.soo.capacity_left = IS_LONG_BIT;
       _storage.str.data = new char[size + 1];
@@ -169,7 +178,9 @@ private:
       {
         std::memcpy(_storage.soo.data, input_data, size);
       }
-      _storage.soo.data[size] = '\0';
+      if(size < CAPACITY) {
+        _storage.soo.data[size] = '\0';
+      }
     }
   }
 };

@@ -13,6 +13,7 @@
 
 #include "behaviortree_cpp/tree_node.h"
 #include <cstring>
+#include <array>
 
 namespace BT
 {
@@ -54,6 +55,17 @@ struct TreeNode::PImpl
 TreeNode::TreeNode(std::string name, NodeConfig config) :
   _p(new PImpl(std::move(name), std::move(config)))
 {
+}
+
+TreeNode::TreeNode(TreeNode &&other) noexcept
+{
+  this->_p = std::move(other._p);
+}
+
+TreeNode &TreeNode::operator=(TreeNode &&other) noexcept
+{
+  this->_p = std::move(other._p);
+  return *this;
 }
 
 TreeNode::~TreeNode() {}
@@ -117,7 +129,10 @@ NodeStatus TreeNode::executeTick()
     }
   }
 
-  setStatus(new_status);
+  // preserve the IDLE state if skipped, but communicate SKIPPED to parent
+  if(new_status != NodeStatus::SKIPPED) {
+    setStatus(new_status);
+  }
   return new_status;
 }
 
@@ -166,22 +181,25 @@ TreeNode::PostScripts &TreeNode::postConditionsScripts() {
 
 Expected<NodeStatus> TreeNode::checkPreConditions()
 {
+  Ast::Environment env = {config().blackboard, config().enums};
+
   // check the pre-conditions
   for (size_t index = 0; index < size_t(PreCond::COUNT_); index++)
   {
-    PreCond preID = PreCond(index);
     const auto& parse_executor = _p->pre_parsed[index];
     if (!parse_executor)
     {
       continue;
     }
-    Ast::Environment env = {config().blackboard, config().enums};
-    auto result = parse_executor(env);
-    // what to do if the condition is true
-    if (result.cast<bool>())
+
+    const PreCond preID = PreCond(index);
+
+    // Some preconditions are applied only when the node state is IDLE or SKIPPED
+    if (_p->status == NodeStatus::IDLE ||
+        _p->status == NodeStatus::SKIPPED)
     {
-      // Some preconditions are applied only when the node is started
-      if (!isStatusCompleted(_p->status))
+      // what to do if the condition is true
+      if (parse_executor(env).cast<bool>())
       {
         if (preID == PreCond::FAILURE_IF)
         {
@@ -196,15 +214,18 @@ Expected<NodeStatus> TreeNode::checkPreConditions()
           return NodeStatus::SKIPPED;
         }
       }
-    }
-    else   // condition is false
-    {
-      if (preID == PreCond::WHILE_TRUE)
+      // if the conditions is false
+      else if(preID == PreCond::WHILE_TRUE)
       {
-        if (_p->status == NodeStatus::RUNNING)
-        {
-          halt();
-        }
+        return NodeStatus::SKIPPED;
+      }
+    }
+    else if(_p->status == NodeStatus::RUNNING && preID == PreCond::WHILE_TRUE)
+    {
+      // what to do if the condition is false
+      if (!parse_executor(env).cast<bool>())
+      {
+        haltNode();
         return NodeStatus::SKIPPED;
       }
     }
@@ -335,36 +356,38 @@ StringView TreeNode::getRawPortValue(const std::string& key) const
   return remap_it->second;
 }
 
-bool TreeNode::isBlackboardPointer(StringView str)
+bool TreeNode::isBlackboardPointer(StringView str, StringView* stripped_pointer)
 {
-  const auto size = str.size();
-  if (size >= 3 && str.back() == '}')
+  if (str.size() < 3)
   {
-    if (str[0] == '{')
-    {
-      return true;
-    }
-    if (size >= 4 && str[0] == '$' && str[1] == '{')
-    {
-      return true;
-    }
+    return false;
   }
-  return false;
+  // strip leading and following spaces
+  size_t front_index = 0;
+  size_t last_index = str.size()-1;
+  while(str[front_index] == ' ' && front_index <= last_index)
+  {
+    front_index++;
+  }
+  while(str[last_index] == ' ' && front_index <= last_index)
+  {
+    last_index--;
+  }
+  const auto size = (last_index-front_index) + 1;
+  auto valid = size >= 3 && str[front_index] == '{' && str[last_index] == '}';
+  if(valid && stripped_pointer)
+  {
+    *stripped_pointer = StringView( &str[front_index+1], size-2);
+  }
+  return valid;
 }
 
 StringView TreeNode::stripBlackboardPointer(StringView str)
 {
-  const auto size = str.size();
-  if (size >= 3 && str.back() == '}')
+  StringView out;
+  if(isBlackboardPointer(str, &out))
   {
-    if (str[0] == '{')
-    {
-      return str.substr(1, size - 2);
-    }
-    if (str[0] == '$' && str[1] == '{')
-    {
-      return str.substr(2, size - 3);
-    }
+    return out;
   }
   return {};
 }
@@ -376,9 +399,10 @@ Expected<StringView> TreeNode::getRemappedKey(StringView port_name,
   {
     return {port_name};
   }
-  if (isBlackboardPointer(remapped_port))
+  StringView stripped;
+  if (isBlackboardPointer(remapped_port, &stripped))
   {
-    return {stripBlackboardPointer(remapped_port)};
+    return {stripped};
   }
   return nonstd::make_unexpected("Not a blackboard pointer");
 }

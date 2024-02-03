@@ -13,11 +13,10 @@
 
 #pragma once
 
-#include <condition_variable>
 #include <exception>
-#include <mutex>
 #include <map>
 #include <regex>
+#include <utility>
 
 #include "behaviortree_cpp/utils/signal.h"
 #include "behaviortree_cpp/basic_types.h"
@@ -39,7 +38,7 @@ struct TreeNodeManifest
   NodeType type;
   std::string registration_ID;
   PortsList ports;
-  std::string description;
+  KeyValueVector metadata;
 };
 
 using PortsRemapping = std::unordered_map<std::string, std::string>;
@@ -138,8 +137,8 @@ public:
   TreeNode(const TreeNode& other) = delete;
   TreeNode& operator=(const TreeNode& other) = delete;
 
-  TreeNode(TreeNode&& other) = default;
-  TreeNode& operator=(TreeNode&& other) = default;
+  TreeNode(TreeNode&& other) noexcept;
+  TreeNode& operator=(TreeNode&& other) noexcept;
 
   virtual ~TreeNode();
 
@@ -244,7 +243,7 @@ public:
    * @brief setOutput modifies the content of an Output port
    * @param key    the name of the port.
    * @param value  new value
-   * @return       valid Result, is succesfull.
+   * @return       valid Result, if succesful.
    */
   template <typename T>
   Result setOutput(const std::string& key, const T& value);
@@ -285,10 +284,9 @@ public:
   // in the port (no remapping and no conversion to a type)
   [[nodiscard]] StringView getRawPortValue(const std::string& key) const;
 
-  /// Check a string and return true if it matches either one of these
-  /// two patterns:  {...} or ${...}
+  /// Check a string and return true if it matches the pattern:  {...}
   [[nodiscard]]
-  static bool isBlackboardPointer(StringView str);
+  static bool isBlackboardPointer(StringView str, StringView* stripped_pointer = nullptr);
 
   [[nodiscard]]
   static StringView stripBlackboardPointer(StringView str);
@@ -429,6 +427,7 @@ inline Result TreeNode::getInput(const std::string& key, T& destination) const
       }
     }
 
+    (void)this; // maybe unused
     if constexpr (std::is_enum_v<T> && !std::is_same_v<T, NodeStatus>)
     {
       auto it = config().enums->find(str);
@@ -450,7 +449,8 @@ inline Result TreeNode::getInput(const std::string& key, T& destination) const
   auto remap_it = config().input_ports.find(key);
   if (remap_it == config().input_ports.end())
   {
-    return nonstd::make_unexpected(StrCat("getInput() failed because "
+    return nonstd::make_unexpected(StrCat("getInput() of node `", fullPath(),
+                                          "` failed because "
                                           "NodeConfig::input_ports "
                                           "does not contain the key: [",
                                           key, "]"));
@@ -491,10 +491,16 @@ inline Result TreeNode::getInput(const std::string& key, T& destination) const
     if (auto any_ref = config().blackboard->getAnyLocked(std::string(remapped_key)))
     {
       auto val = any_ref.get();
+      // support getInput<Any>()
+      if constexpr (std::is_same_v<T, Any>)
+      {
+        destination = *val;
+        return {};
+      }
+
       if(!val->empty())
       {
-        if (!std::is_same_v<T, std::string> &&
-            val->type() == typeid(std::string))
+        if (!std::is_same_v<T, std::string> && val->isString())
         {
           destination = ParseString(val->cast<std::string>());
         }
@@ -536,12 +542,25 @@ inline Result TreeNode::setOutput(const std::string& key, const T& value)
   StringView remapped_key = remap_it->second;
   if (remapped_key == "=")
   {
-    remapped_key = key;
+    config().blackboard->set(static_cast<std::string>(key), value);
+    return {};
   }
-  if (isBlackboardPointer(remapped_key))
+
+  if (!isBlackboardPointer(remapped_key))
   {
-    remapped_key = stripBlackboardPointer(remapped_key);
+    return nonstd::make_unexpected("setOutput requires a blackboard pointer. Use {}");
   }
+
+  if constexpr(std::is_same_v<BT::Any, T>)
+  {
+    if(config().manifest->ports.at(key).type() != typeid(BT::Any))
+    {
+      throw LogicError("setOutput<Any> is not allowed, unless the port "
+                       "was declared using OutputPort<Any>");
+    }
+  }
+
+  remapped_key = stripBlackboardPointer(remapped_key);
   config().blackboard->set(static_cast<std::string>(remapped_key), value);
 
   return {};

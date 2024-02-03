@@ -1,7 +1,7 @@
 #pragma once
 
-#include <memory>
 #include <mutex>
+#include "behaviortree_cpp/utils/safe_any.hpp"
 
 namespace BT
 {
@@ -10,7 +10,7 @@ namespace BT
  * and a mutex that protects the read/write access to that object.
  *
  * As long as the object remains in scope, the mutex is locked, therefore
- * you must destroy this object as soon as the pointer was used.
+ * you must destroy this instance as soon as the pointer was used.
  */
 template <typename T>
 class LockedPtr
@@ -18,8 +18,8 @@ class LockedPtr
 public:
   LockedPtr() = default;
 
-  LockedPtr(const T* obj, std::mutex* obj_mutex) : ref_(obj), mutex_(obj_mutex)
-  {
+  LockedPtr(T* obj, std::mutex* obj_mutex):
+        ref_(obj), mutex_(obj_mutex) {
     mutex_->lock();
   }
 
@@ -67,18 +67,40 @@ public:
     }
   }
 
-  bool empty() const
-  {
-    return ref_ == nullptr;
-  }
-
-  const T* get() const
-  {
+  const T* get() const{
     return ref_;
   }
 
-private:
-  const T* ref_ = nullptr;
+  const T* operator->() const{
+    return ref_;
+  }
+
+  T* operator->() {
+    return ref_;
+  }
+
+  template <typename OtherT>
+  void assign(const OtherT& other)
+  {
+    if(ref_ == nullptr)
+    {
+      throw std::runtime_error("Empty LockedPtr reference");
+    }
+    else if constexpr(std::is_same_v<T, OtherT>)
+    {
+      *ref_ = other;
+    }
+    else if constexpr(std::is_same_v<BT::Any, OtherT>)
+    {
+      other->copyInto(*ref_);
+    }
+    else {
+      *ref_ = T(other);
+    }
+  }
+
+  private:
+  T* ref_ = nullptr;
   std::mutex* mutex_ = nullptr;
 };
 

@@ -20,8 +20,9 @@
 #include <functional>
 #include <memory>
 #include <unordered_map>
-#include <unordered_set>
 #include <set>
+#include <utility>
+#include <vector>
 
 #include "behaviortree_cpp/contrib/magic_enum.hpp"
 #include "behaviortree_cpp/behavior_tree.h"
@@ -52,6 +53,10 @@ template <typename T>
 inline TreeNodeManifest CreateManifest(const std::string& ID,
                                        PortsList portlist = getProvidedPorts<T>())
 {
+  if constexpr( has_static_method_metadata<T>::value )
+  {
+    return {getType<T>(), ID, portlist, T::metadata()};
+  }
   return {getType<T>(), ID, portlist, {}};
 }
 
@@ -76,7 +81,7 @@ inline TreeNodeManifest CreateManifest(const std::string& ID,
 *   }
 *
 * IMPORTANT: this function MUST be declared in a cpp file, NOT a header file.
-* In your cake, you must add the definition [BT_PLUGIN_EXPORT] with:
+* You must add the definition [BT_PLUGIN_EXPORT] in CMakeLists.txt using:
 *
 *   target_compile_definitions(my_plugin_target PRIVATE  BT_PLUGIN_EXPORT )
 
@@ -188,7 +193,7 @@ public:
   /// move_nodes = tree.getNodesByPath<MoveBaseNode>("move_*");
   ///
   template <typename NodeType = BT::TreeNode> [[nodiscard]]
-  std::vector<const TreeNode*> getNodesByPath(StringView wildcard_filter) {
+  std::vector<const TreeNode*> getNodesByPath(StringView wildcard_filter) const {
     std::vector<const TreeNode*> nodes;
     for (auto const& subtree : subtrees) {
       for (auto const& node : subtree->nodes) {
@@ -236,8 +241,8 @@ public:
   BehaviorTreeFactory(const BehaviorTreeFactory& other) = delete;
   BehaviorTreeFactory& operator=(const BehaviorTreeFactory& other) = delete;
 
-  BehaviorTreeFactory(BehaviorTreeFactory&& other) = default;
-  BehaviorTreeFactory& operator=(BehaviorTreeFactory&& other)  = default;
+  BehaviorTreeFactory(BehaviorTreeFactory&& other) noexcept;
+  BehaviorTreeFactory& operator=(BehaviorTreeFactory&& other) noexcept;
 
   /// Remove a registered ID.
   bool unregisterBuilder(const std::string& ID);
@@ -409,22 +414,27 @@ public:
   template <typename T, typename... ExtraArgs>
   void registerNodeType(const std::string& ID, ExtraArgs... args)
   {
-    // check first if the given class is abstract
-    static_assert(!std::is_abstract_v<T>, "The given type can't be abstract");
+    if constexpr(std::is_abstract_v<T>) {
+      // check first if the given class is abstract
+      static_assert(!std::is_abstract_v<T>, "The Node type can't be abstract. "
+                                            "Did you forget to implement an abstract "
+                                            "method in the derived class?");
+    }
+    else {
+      constexpr bool param_constructable =
+          std::is_constructible<T, const std::string&, const NodeConfig&, ExtraArgs...>::value;
+      constexpr bool has_static_ports_list = has_static_method_providedPorts<T>::value;
 
-    constexpr bool param_constructable =
-        std::is_constructible<T, const std::string&, const NodeConfig&, ExtraArgs...>::value;
-    constexpr bool has_static_ports_list = has_static_method_providedPorts<T>::value;
+      // clang-format off
+      static_assert(!(param_constructable && !has_static_ports_list),
+                    "[registerNode]: you MUST implement the static method:\n"
+                    "  PortsList providedPorts();\n");
 
-    // clang-format off
-    static_assert(!(param_constructable && !has_static_ports_list),
-                  "[registerNode]: you MUST implement the static method:\n"
-                  "  PortsList providedPorts();\n");
-
-    static_assert(!(has_static_ports_list && !param_constructable),
-                  "[registerNode]: since you have a static method providedPorts(),\n"
-                  "you MUST add a constructor with signature:\n"
-                  "(const std::string&, const NodeParameters&)\n");
+      static_assert(!(has_static_ports_list && !param_constructable),
+                    "[registerNode]: since you have a static method providedPorts(),\n"
+                    "you MUST add a constructor with signature:\n"
+                    "(const std::string&, const NodeConfig&)\n");
+    }
     // clang-format on
     registerNodeType<T>(ID, getProvidedPorts<T>(), args...);
   }
@@ -475,10 +485,10 @@ public:
   Tree createTree(const std::string& tree_name,
                   Blackboard::Ptr blackboard = Blackboard::create());
 
-  /// Add a description to a specific manifest. This description will be added
+  /// Add metadata to a specific manifest. This metadata will be added
   /// to <TreeNodesModel> with the function writeTreeNodesModelXML()
-  void addDescriptionToManifest(const std::string& node_id,
-                                const std::string& description);
+  void addMetadataToManifest(const std::string& node_id,
+                             const KeyValueVector& metadata);
 
   /**
    * @brief Add an Enum to the scripting language.

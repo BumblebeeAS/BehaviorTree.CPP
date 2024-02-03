@@ -1,16 +1,13 @@
 #include "behaviortree_cpp/bt_factory.h"
 #include "behaviortree_cpp/decorators/loop_node.h"
 #include "behaviortree_cpp/loggers/bt_cout_logger.h"
-#include <list>
+#include <deque>
 
 using namespace BT;
 
 /*
  * In this example we will show how a common design pattern could be implemented.
  * We want to iterate through the elements of a queue, for instance a list of waypoints.
- *
- * Two ways to create a "loop" are presented, one using the actions "QueueSize" and "PopFromQueue"
- * and the other using the decorator "ConsumeQueue".
  */
 
 struct Pose2D

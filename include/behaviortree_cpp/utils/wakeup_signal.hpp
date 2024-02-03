@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <mutex>
+#include <atomic>
 #include <condition_variable>
 
 namespace BT
@@ -10,29 +11,32 @@ namespace BT
 class WakeUpSignal
 {
 public:
-  /// Return true if the timeout was NOT reached and the
-  /// signal was received.
-  bool waitFor(std::chrono::system_clock::duration tm)
-  {
-    std::unique_lock<std::mutex> lk(mutex_);
-    auto res = cv_.wait_for(lk, tm, [this] { return ready_; });
-    ready_ = false;
-    return res;
-  }
+    /// Return true if the timeout was NOT reached and the
+    /// signal was received.
+    bool waitFor(std::chrono::microseconds usec)
+    {
+      std::unique_lock<std::mutex> lk(mutex_);
+      auto res = cv_.wait_for(lk, usec, [this]{
+        return ready_.load();
+      });
+      ready_ = false;
+      return res;
+    }
 
   void emitSignal()
   {
     {
-      std::lock_guard<std::mutex> lk(mutex_);
-      ready_ = true;
+       ready_ = true;
+       cv_.notify_all();
     }
     cv_.notify_all();
   }
 
 private:
-  std::mutex mutex_;
-  std::condition_variable cv_;
-  bool ready_ = false;
+
+    std::mutex mutex_;
+    std::condition_variable cv_;
+    std::atomic_bool ready_ = false;
 };
 
 }   // namespace BT

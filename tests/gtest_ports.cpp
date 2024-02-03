@@ -26,10 +26,8 @@ public:
 
   static PortsList providedPorts()
   {
-    return {BT::InputPort<int>("in_port_A", 42, "magic_number"), BT::InputPort<int>("in_"
-                                                                                    "port"
-                                                                                    "_"
-                                                                                    "B")};
+    return {BT::InputPort<int>("in_port_A", 42, "magic_number"),
+            BT::InputPort<int>("in_port_B")};
   }
 };
 
@@ -38,17 +36,47 @@ TEST(PortTest, DefaultPorts)
   std::string xml_txt = R"(
     <root BTCPP_format="4" >
         <BehaviorTree ID="MainTree">
-            <NodeWithPorts name = "first"  in_port_B="66" />
+            <NodeWithPorts in_port_B="66" />
+        </BehaviorTree>
+    </root>)";
+
+  BehaviorTreeFactory factory;
+  factory.registerNodeType<NodeWithPorts>("NodeWithPorts");
+  auto tree = factory.createTreeFromText(xml_txt);
+  NodeStatus status = tree.tickWhileRunning();
+  ASSERT_EQ(status, NodeStatus::SUCCESS);
+}
+
+
+TEST(PortTest, MissingPort)
+{
+  std::string xml_txt = R"(
+    <root BTCPP_format="4" >
+        <BehaviorTree ID="MainTree">
+            <NodeWithPorts/>
+        </BehaviorTree>
+    </root>)";
+
+  BehaviorTreeFactory factory;
+  factory.registerNodeType<NodeWithPorts>("NodeWithPorts");
+  auto tree = factory.createTreeFromText(xml_txt);
+  NodeStatus status = tree.tickWhileRunning();
+  ASSERT_EQ(status, NodeStatus::FAILURE);
+}
+
+TEST(PortTest, WrongPort)
+{
+  std::string xml_txt = R"(
+    <root BTCPP_format="4" >
+        <BehaviorTree ID="MainTree">
+            <NodeWithPorts da_port="66" />
         </BehaviorTree>
     </root>)";
 
   BehaviorTreeFactory factory;
   factory.registerNodeType<NodeWithPorts>("NodeWithPorts");
 
-  auto tree = factory.createTreeFromText(xml_txt);
-
-  NodeStatus status = tree.tickWhileRunning();
-  ASSERT_EQ(status, NodeStatus::SUCCESS);
+  EXPECT_ANY_THROW(auto tree = factory.createTreeFromText(xml_txt));
 }
 
 TEST(PortTest, Descriptions)
@@ -229,63 +257,6 @@ TEST(PortTest, SubtreeStringInput_Issue489)
   ASSERT_EQ(7, states[1]);
 }
 
-enum class Color
-{
-  Red = 0,
-  Blue = 1,
-  Green = 2,
-  Undefined
-};
-
-class ActionEnum : public SyncActionNode
-{
-public:
-  ActionEnum(const std::string& name, const NodeConfig& config) :
-    SyncActionNode(name, config)
-  {}
-
-  NodeStatus tick() override
-  {
-    getInput("color", color);
-    return NodeStatus::SUCCESS;
-  }
-
-  static PortsList providedPorts()
-  {
-    return {BT::InputPort<Color>("color")};
-  }
-
-  Color color = Color::Undefined;
-};
-
-TEST(PortTest, StrintToEnum)
-{
-  std::string xml_txt = R"(
-    <root BTCPP_format="4" >
-      <BehaviorTree ID="Main">
-        <Sequence>
-          <ActionEnum color="Blue"/>
-          <ActionEnum color="2"/>
-        </Sequence>
-      </BehaviorTree>
-    </root>)";
-
-  BehaviorTreeFactory factory;
-  factory.registerNodeType<ActionEnum>("ActionEnum");
-  factory.registerScriptingEnums<Color>();
-
-  auto tree = factory.createTreeFromText(xml_txt);
-
-  NodeStatus status = tree.tickWhileRunning();
-
-  ASSERT_EQ(status, NodeStatus::SUCCESS);
-
-  auto first_node = dynamic_cast<ActionEnum*>(tree.subtrees.front()->nodes[1].get());
-  auto second_node = dynamic_cast<ActionEnum*>(tree.subtrees.front()->nodes[2].get());
-
-  ASSERT_EQ(Color::Blue, first_node->color);
-  ASSERT_EQ(Color::Green, second_node->color);
-}
 
 class DefaultTestAction : public SyncActionNode
 {
@@ -329,8 +300,6 @@ public:
             BT::InputPort<std::string>("greeting", "hello", "be polite"),
             BT::InputPort<Point2D>("pos", {1, 2}, "where")};
   }
-
-  Color color = Color::Undefined;
 };
 
 TEST(PortTest, DefaultInput)
@@ -348,3 +317,88 @@ TEST(PortTest, DefaultInput)
   auto status = tree.tickOnce();
   ASSERT_EQ(status, NodeStatus::SUCCESS);
 }
+
+
+class GetAny : public SyncActionNode
+{
+public:
+  GetAny(const std::string& name, const NodeConfig& config) :
+      SyncActionNode(name, config)
+  {}
+
+  NodeStatus tick() override
+  {
+    // case 1: the port is Any, but we can cast dirrectly to string
+    auto res_str = getInput<std::string>("val_str");
+    // case 2: the port is Any, and we retrieve an Any (to be casted later)
+    auto res_int = getInput<BT::Any>("val_int");
+
+    // case 3: port is double and we get a double
+    auto res_real_A = getInput<double>("val_real");
+    // case 4: port is double and we get an Any
+    auto res_real_B = getInput<BT::Any>("val_real");
+
+    bool expected = res_str.value() == "hello" &&
+                    res_int->cast<int>() == 42 &&
+                    res_real_A.value() == 3.14 &&
+                    res_real_B->cast<double>() == 3.14;
+
+    return expected ? NodeStatus::SUCCESS : NodeStatus::FAILURE;
+  }
+
+  static PortsList providedPorts()
+  {
+    return {BT::InputPort<BT::Any>("val_str"),
+            BT::InputPort<BT::Any>("val_int"),
+            BT::InputPort<double>("val_real")};
+  }
+};
+
+class SetAny : public SyncActionNode
+{
+public:
+  SetAny(const std::string& name, const NodeConfig& config) :
+      SyncActionNode(name, config)
+  {}
+
+  NodeStatus tick() override
+  {
+    // check that the port can contain different types
+    setOutput("val_str", BT::Any(1.0));
+    setOutput("val_str", BT::Any(1));
+    setOutput("val_str", BT::Any("hello"));
+
+    setOutput("val_int", 42);
+    setOutput("val_real", 3.14);
+    return NodeStatus::SUCCESS;
+  }
+
+  static PortsList providedPorts()
+  {
+    return {BT::OutputPort<BT::Any>("val_str"),
+            BT::OutputPort<int>("val_int"),
+            BT::OutputPort<BT::Any>("val_real")};
+  }
+};
+
+TEST(PortTest, AnyPort)
+{
+  std::string xml_txt = R"(
+    <root BTCPP_format="4" >
+      <BehaviorTree>
+        <Sequence>
+          <SetAny val_str="{val_str}" val_int="{val_int}" val_real="{val_real}"/>
+          <GetAny val_str="{val_str}" val_int="{val_int}" val_real="{val_real}"/>
+        </Sequence>
+      </BehaviorTree>
+    </root>)";
+
+  BehaviorTreeFactory factory;
+  factory.registerNodeType<SetAny>("SetAny");
+  factory.registerNodeType<GetAny>("GetAny");
+  auto tree = factory.createTreeFromText(xml_txt);
+  auto status = tree.tickOnce();
+  ASSERT_EQ(status, NodeStatus::SUCCESS);
+}
+
+

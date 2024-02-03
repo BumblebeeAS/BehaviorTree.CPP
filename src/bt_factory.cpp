@@ -74,7 +74,7 @@ BehaviorTreeFactory::BehaviorTreeFactory():
   registerNodeType<RetryNode>("RetryUntilSuccessful");
   registerNodeType<KeepRunningUntilFailureNode>("KeepRunningUntilFailure");
   registerNodeType<RepeatNode>("Repeat");
-  registerNodeType<TimeoutNode<>>("Timeout");
+  registerNodeType<TimeoutNode>("Timeout");
   registerNodeType<DelayNode>("Delay");
   registerNodeType<RunOnceNode>("RunOnce");
 
@@ -85,8 +85,9 @@ BehaviorTreeFactory::BehaviorTreeFactory():
   registerNodeType<AlwaysFailureNode>("AlwaysFailure");
   registerNodeType<ScriptNode>("Script");
   registerNodeType<ScriptCondition>("ScriptCondition");
-  registerNodeType<SetBlackboard>("SetBlackboard");
+  registerNodeType<SetBlackboardNode>("SetBlackboard");
   registerNodeType<SleepNode>("Sleep");
+  registerNodeType<UnsetBlackboardNode>("UnsetBlackboard");
 
   registerNodeType<SubTreeNode>("SubTree");
 
@@ -97,7 +98,9 @@ BehaviorTreeFactory::BehaviorTreeFactory():
   registerNodeType<SwitchNode<4>>("Switch4");
   registerNodeType<SwitchNode<5>>("Switch5");
   registerNodeType<SwitchNode<6>>("Switch6");
-  
+
+  registerNodeType<LoopNode<int>>("LoopInt");
+  registerNodeType<LoopNode<bool>>("LoopBool");
   registerNodeType<LoopNode<double>>("LoopDouble");
   registerNodeType<LoopNode<std::string>>("LoopString");
 
@@ -107,6 +110,17 @@ BehaviorTreeFactory::BehaviorTreeFactory():
   }
 
   _p->scripting_enums = std::make_shared<std::unordered_map<std::string, int>>();
+}
+
+BehaviorTreeFactory::BehaviorTreeFactory(BehaviorTreeFactory &&other) noexcept
+{
+  this->_p = std::move(other._p);
+}
+
+BehaviorTreeFactory &BehaviorTreeFactory::operator=(BehaviorTreeFactory &&other) noexcept
+{
+  this->_p = std::move(other._p);
+  return *this;
 }
 
 BehaviorTreeFactory::~BehaviorTreeFactory()
@@ -437,7 +451,7 @@ Tree BehaviorTreeFactory::createTreeFromText(const std::string& text,
   if(!_p->parser->registeredBehaviorTrees().empty()) {
     std::cout << "WARNING: You executed BehaviorTreeFactory::createTreeFromText "
                  "after registerBehaviorTreeFrom[File/Text].\n"
-                 "This is NOTm probably, what you want to do.\n"
+                 "This is NOT, probably, what you want to do.\n"
                  "You should probably use BehaviorTreeFactory::createTree, instead"
               << std::endl;
   }
@@ -454,7 +468,7 @@ Tree BehaviorTreeFactory::createTreeFromFile(const std::filesystem::path &file_p
   if(!_p->parser->registeredBehaviorTrees().empty()) {
     std::cout << "WARNING: You executed BehaviorTreeFactory::createTreeFromFile "
                  "after registerBehaviorTreeFrom[File/Text].\n"
-                 "This is NOTm probably, what you want to do.\n"
+                 "This is NOT, probably, what you want to do.\n"
                  "You should probably use BehaviorTreeFactory::createTree, instead"
               << std::endl;
   }
@@ -474,15 +488,15 @@ Tree BehaviorTreeFactory::createTree(const std::string& tree_name,
   return tree;
 }
 
-void BehaviorTreeFactory::addDescriptionToManifest(const std::string& node_id,
-                                                   const std::string& description)
+void BehaviorTreeFactory::addMetadataToManifest(const std::string& node_id,
+                                                const KeyValueVector& metadata)
 {
   auto it = _p->manifests.find(node_id);
   if (it == _p->manifests.end())
   {
-    throw std::runtime_error("addDescriptionToManifest: wrong ID");
+    throw std::runtime_error("addMetadataToManifest: wrong ID");
   }
-  it->second.description = description;
+  it->second.metadata = metadata;
 }
 
 void BehaviorTreeFactory::registerScriptingEnum(StringView name, int value)
@@ -603,7 +617,7 @@ TreeNode* Tree::rootNode() const
 
 void Tree::sleep(std::chrono::system_clock::duration timeout)
 {
-  wake_up_->waitFor(timeout);
+  wake_up_->waitFor(std::chrono::duration_cast<std::chrono::milliseconds>(timeout));
 }
 
 Tree::~Tree()
@@ -613,12 +627,12 @@ Tree::~Tree()
 
 NodeStatus Tree::tickExactlyOnce()
 {
-  return tickRoot(EXACTLY_ONCE, {});
+  return tickRoot(EXACTLY_ONCE, std::chrono::milliseconds(0));
 }
 
 NodeStatus Tree::tickOnce()
 {
-  return tickRoot(ONCE_UNLESS_WOKEN_UP, {});
+  return tickRoot(ONCE_UNLESS_WOKEN_UP, std::chrono::milliseconds(0));
 }
 
 NodeStatus Tree::tickWhileRunning(std::chrono::milliseconds sleep_time)
@@ -690,7 +704,7 @@ NodeStatus Tree::tickRoot(TickOption opt, std::chrono::milliseconds sleep_time)
     {
       rootNode()->resetStatus();
     }
-    if (status == NodeStatus::RUNNING)
+    if (status == NodeStatus::RUNNING && sleep_time.count() > 0)
     {
       sleep(std::chrono::milliseconds(sleep_time));
     }

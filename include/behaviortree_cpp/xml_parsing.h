@@ -23,8 +23,8 @@ public:
   XMLParser(const XMLParser& other) = delete;
   XMLParser& operator=(const XMLParser& other) = delete;
 
-  XMLParser(XMLParser&& other) = default;
-  XMLParser& operator=(XMLParser&& other) = default;
+  XMLParser(XMLParser&& other) noexcept;
+  XMLParser& operator=(XMLParser&& other) noexcept;
 
   void loadFromFile(const std::filesystem::path &filename, bool add_includes = true) override;
 
@@ -59,6 +59,16 @@ void VerifyXML(const std::string& xml_text,
 [[nodiscard]]
 std::string writeTreeNodesModelXML(const BehaviorTreeFactory& factory,
                                    bool include_builtin = false);
+
+/**
+ * @brief writeTreeXSD generates an XSD for the nodes defined in the factory
+ *
+ * @param factory          the factory with the registered types
+ *
+ * @return  string containing the XML.
+ */
+[[nodiscard]]
+std::string writeTreeXSD(const BehaviorTreeFactory& factory);
 
 /**
  * @brief WriteTreeToXML create a string that contains the XML that corresponds to a given tree.

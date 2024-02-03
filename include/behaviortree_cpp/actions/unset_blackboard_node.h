@@ -1,4 +1,4 @@
-/* Copyright (C) 2020-2022 Davide Faconti, Eurecat -  All Rights Reserved
+/*  Copyright (C) 2023 Davide Faconti -  All Rights Reserved
 *
 *   Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
 *   to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
@@ -12,44 +12,37 @@
 
 #pragma once
 
-#include "behaviortree_cpp/control_node.h"
+#include "behaviortree_cpp/action_node.h"
 
 namespace BT
 {
 /**
- * @brief The ReactiveSequence is similar to a ParallelNode.
- * All the children are ticked from first to last:
- *
- * - If a child returns RUNNING, halt the remaining siblings in the sequence and return RUNNING.
- * - If a child returns SUCCESS, tick the next sibling.
- * - If a child returns FAILURE, stop and return FAILURE.
- *
- * If all the children return SUCCESS, this node returns SUCCESS.
- *
- * IMPORTANT: to work properly, this node should not have more than a single
- *            asynchronous child.
- *
+ * Action that removes an entry from the blackboard and return SUCCESS.
  */
-class ReactiveSequence : public ControlNode
+class UnsetBlackboardNode : public SyncActionNode
 {
 public:
-  ReactiveSequence(const std::string& name) : ControlNode(name, {})
-  {}
+  UnsetBlackboardNode(const std::string& name, const NodeConfig& config) :
+    SyncActionNode(name, config)
+  {
+    setRegistrationID("UnsetBlackboard");
+  }
 
-  /** A ReactiveSequence is not supposed to have more than a single
-  * anychronous node; if it does an exception is thrown.
-  * You can disabled that check, if you know what you are doing.
-  */
-  static void EnableException(bool enable);
+  static PortsList providedPorts()
+  {
+    return { InputPort<std::string>("key", "Key of the entry to remove") };
+  }
 
 private:
-  BT::NodeStatus tick() override;
-
-  void halt() override;
-
-  int running_child_ = -1;
-
-  static bool throw_if_multiple_running;
+  virtual BT::NodeStatus tick() override
+  {
+    std::string key;
+    if (!getInput("key", key))
+    {
+      throw RuntimeError("missing input port [key]");
+    }
+    config().blackboard->unset(key);
+    return NodeStatus::SUCCESS;
+  }
 };
-
 }   // namespace BT

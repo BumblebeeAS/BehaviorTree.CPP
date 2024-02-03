@@ -152,7 +152,7 @@ TEST(ParserTest, Equations)
   EXPECT_EQ(GetResult("y | x").cast<double>(), (5 | 3));
   EXPECT_EQ(GetResult("y ^ x").cast<double>(), (5 ^ 3));
 
-  EXPECT_ANY_THROW(GetResult("y ^ 5.1").cast<double>());
+  EXPECT_ANY_THROW(auto res = GetResult("y ^ 5.1").cast<double>());
 
   // test string variables
   EXPECT_EQ(GetResult("A:='hello'; B:=' '; C:='world'; A+B+C").cast<std::string>(), "hell"
@@ -218,6 +218,7 @@ TEST(ParserTest, Equations)
   EXPECT_EQ(variables->get<int>("v1"), 1);
   EXPECT_EQ(variables->get<int>("v2"), 0);
 
+  EXPECT_EQ(GetResult(" v2 = true ").cast<int>(), 1);
   EXPECT_EQ(GetResult(" v2 = !false ").cast<int>(), 1);
   EXPECT_EQ(GetResult(" v2 = !v2 ").cast<int>(), 0);
 
@@ -385,4 +386,24 @@ TEST(ParserTest, Issue595)
 
   ASSERT_EQ(status, BT::NodeStatus::SUCCESS);
   ASSERT_EQ(0, counters[0]);
+}
+
+TEST(ParserTest, NewLine)
+{
+  BT::BehaviorTreeFactory factory;
+
+  const std::string xml_text = R"(
+  <root BTCPP_format="4" >
+    <BehaviorTree ID="Main">
+      <Script code="A:=5;&#10;B:=6"/>
+    </BehaviorTree>
+  </root> )";
+
+
+  auto tree = factory.createTreeFromText(xml_text);
+  const auto status = tree.tickWhileRunning();
+
+  ASSERT_EQ(status, BT::NodeStatus::SUCCESS);
+  ASSERT_EQ(tree.rootBlackboard()->get<int>("A"), 5);
+  ASSERT_EQ(tree.rootBlackboard()->get<int>("B"), 6);
 }

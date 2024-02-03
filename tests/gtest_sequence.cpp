@@ -13,7 +13,8 @@
 #include <gtest/gtest.h>
 #include "action_test_node.h"
 #include "condition_test_node.h"
-#include "behaviortree_cpp/behavior_tree.h"
+#include "behaviortree_cpp/bt_factory.h"
+#include "test_helper.hpp"
 
 using BT::NodeStatus;
 using std::chrono::milliseconds;
@@ -230,7 +231,7 @@ TEST_F(ComplexSequenceTest, ComplexSequenceConditionsTrue)
   // reactive node already reset seq_conditions
   ASSERT_EQ(NodeStatus::IDLE, seq_conditions.status());
   ASSERT_EQ(NodeStatus::IDLE, condition_1.status());
-  ASSERT_EQ(NodeStatus::IDLE, condition_1.status());
+  ASSERT_EQ(NodeStatus::IDLE, condition_2.status());
   ASSERT_EQ(NodeStatus::RUNNING, action_1.status());
 }
 
@@ -238,7 +239,14 @@ TEST_F(SequenceTripleActionTest, TripleAction)
 {
   using namespace BT;
   using namespace std::chrono;
-  const auto timeout = system_clock::now() + milliseconds(650);
+
+#ifdef WIN32
+  const int margin_msec = 60;
+#else
+  const int margin_msec = 20;
+#endif
+
+  const auto timeout = system_clock::now() + milliseconds(600 + margin_msec);
 
   action_1.setTime(milliseconds(300));
   action_3.setTime(milliseconds(300));
@@ -255,7 +263,7 @@ TEST_F(SequenceTripleActionTest, TripleAction)
   // continue until successful
   while (state != NodeStatus::SUCCESS && system_clock::now() < timeout)
   {
-    std::this_thread::sleep_for(milliseconds(10));
+    std::this_thread::sleep_for(milliseconds(1));
     state = root.executeTick();
   }
 
@@ -387,3 +395,45 @@ TEST_F(ComplexSequenceWithMemoryTest, Conditions1ToFalse)
   ASSERT_EQ(NodeStatus::RUNNING, action_1.status());
   ASSERT_EQ(NodeStatus::IDLE, action_2.status());
 }
+
+
+TEST(SequenceWithMemoryTest, Issue_636)
+{
+  static const char* xml_text = R"(
+
+<root BTCPP_format="4" main_tree_to_execute="MainTree" >
+
+    <BehaviorTree ID="MainTree">
+        <SequenceWithMemory>
+            <Script code = " var := 0 " />
+            <TestA/>
+            <ScriptCondition code = "var+=1; var >= 5" />
+            <TestB/>
+            <TestC/>
+        </SequenceWithMemory>
+    </BehaviorTree>
+</root> )";
+
+  BT::BehaviorTreeFactory factory;
+
+  std::array<int, 3> counters;
+  RegisterTestTick(factory, "Test", counters);
+
+  auto tree = factory.createTreeFromText(xml_text);
+
+  auto res = tree.tickOnce();
+  int tick_count = 1;
+
+  while(res != BT::NodeStatus::SUCCESS)
+  {
+    res = tree.tickOnce();
+    tick_count++;
+  }
+
+  ASSERT_EQ(1, counters[0]);
+  ASSERT_EQ(1, counters[1]);
+  ASSERT_EQ(1, counters[2]);
+
+  ASSERT_EQ(5, tick_count);
+}
+

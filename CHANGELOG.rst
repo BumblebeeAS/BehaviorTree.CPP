@@ -2,12 +2,134 @@
 Changelog for package behaviortree_cpp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-4.3.2 (2023-06-27)
+4.5.1 (2024-01-23)
 ------------------
-* fix `#595 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/595>`_ : improvement in blackboard/scripting types (`#597 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/597>`_)
-* Fix Issue 593 (`#594 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/594>`_): support skipping in Parallel node
-* adding ParallelAll
+* Support enums and real numbers in Node Switch
+* improve Any::castPtr and add example
+* fix issue `#748 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/748>`_ : static error messages
+* Merge pull request `#746 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/746>`_ from galou/snprintf
+  Use snprintf instead of sprintf
+* Use snprintf instead of sprintf
+  - Augment the buffer size on doc error.
+  - Let sprintf in switch_node.h since the max. string length is known.
+* Contributors: Davide Faconti, Gaël Écorchard
+
+4.5.0 (2024-01-10)
+------------------
+* fix typo in unit test `#733 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/733>`_
+* allow Input/Output ports with type Any
+* Merge pull request `#703 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/703>`_ from galou/export_xsd
+  Implement writeTreeXSD() to generate an XSD
+* Any::isType() will return the original type. Cherry picking from `#708 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/708>`_
+* fix `#734 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/734>`_
+* remove unneeded includes
+* add Any::castPtr
+* add alias KeyValueVector
+* Merge pull request `#730 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/730>`_ from adlarkin/add_metadata
+  Add optional metadata to TreeNodeManifest
+* Contributors: Ashton Larkin, Davide Faconti, Gaël Écorchard
+
+4.4.3 (2023-12-19)
+------------------
+* Merge pull request #709 from galou/unset_blackboard
+* fix issue `#725 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/725>`_ : SetBlackboard can copy entries
+* add more unit tests
+* fix typos `#721 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/721>`_
+* fix: guard macro declaration to prevent redefinition warning
+* fix: Rename scoped lock so it doesn't hide the outer lock triggering a compiler warning
+* add private ports to exclude from autoremapping `#706 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/706>`_
+* fix issue `#713 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/713>`_:  getNodesByPath should be const
+* Contributors: Davide Faconti, Nestor Gonzalez, Tony Paulussen
+
+4.4.2 (2023-11-28)
+------------------
+* fix issue `#702 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/702>`_ : output ports require {}
+* Merge pull request `#691 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/691>`_ from galou/small_refactor_and_doc
+  Small code refactor, log- and doc changes
+* Merge pull request `#701 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/701>`_ from tony-p/fix/file-loggers-protected
+  fix: ensure public get config overload is used
+* ci: use pixi github action
+* fix: ensure public get config overload is used
+* Small code refactor, log- and doc changes
+* Contributors: Davide Faconti, Gaël Écorchard, Tony Paulussen
+
+4.4.1 (2023-11-12)
+------------------
+* erase server_port+1
+* add reset by default in base classes (fix `#694 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/694>`_)
+* fix issue `#696 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/696>`_ (wrong autoremapping)
+* Remove traces of SequenceStar
+* fix `#685 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/685>`_ (timeout in ZMP publisher)
+* clang: fix warning
+  fix warning: lambda capture 'this' is not used
+* Use feature test macro to check availability of `std::from_chars`
+* fix warning in older compilers
+* Contributors: Christoph Hertzberg, Davide Faconti, Gaël Écorchard, Shen Xingjian, Sid
+
+4.4.0 (2023-10-16)
+------------------
+* Update ex05_subtree_model.cpp
+* added any::stringToNumber
+* added SubTree model example
+* unit test for issue 660
+* adding SubTree model
+* minor changes
+* change blackboard entry
+* Update simple_string.hpp
+* SimpleString: fix warning by checking upper size limit (`#666 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/666>`_)
+* Contributors: Adam Boseley, Davide Faconti
+
+4.3.8 (2023-10-09)
+------------------
+* ReactiveSequence and ReactiveFallback will behave more similarly to 3.8
+* bug fix in wakeUpSignal
+* ignore newlines in script
+* stop ordering ports in TreeNodesModel
+* add a specific tutorial for plugins
 * Contributors: Davide Faconti
+
+4.3.7 (2023-09-12)
+------------------
+* Test and fix issue `#653 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/653>`_: AnyTypeAllowed by default
+* more time margin for Windows tests
+* Add support for successful conda builds (`#650 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/650>`_)
+* fix: Update how unit tests are executed in the github workflow so they are actually run on windows (`#647 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/647>`_)
+* Add unit test related to SequenceWithMemory `#636 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/636>`_
+* Contributors: Davide Faconti, tony-p
+
+4.3.6 (2023-08-31)
+------------------
+* Simplify the visualization of custom type in Groot2 and improved tutorial 12
+* fix compilation warnings
+* Apply changes in ReactiveSequence to ReactiveFallback too
+* test that logging works correctly with ReactiveSequence `#643 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/643>`_
+* reduce the number of times preconditions scripts are executed
+* PauseWithRetry test added
+* Contributors: Davide Faconti
+
+4.3.5 (2023-08-14)
+------------------
+* fix issue `#621 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/621>`_: ConsumeQueue
+* feat: add template specialization for convertFromString deque (`#628 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/628>`_)
+* unit test added
+* Update groot2_publisher.h (`#630 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/630>`_)
+* unit test issue `#629 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/629>`_
+* WhileDoElseNode can have 2 or 3 children (`#625 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/625>`_)
+* fix issue `#624 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/624>`_ : add TimeoutNode::halt()
+* fix recording_fist_time issue on windows (`#618 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/618>`_)
+* Contributors: Aglargil, Davide Faconti, Michael Terzer, benyamin saedi, muritane
+
+4.3.4 (2023-07-25)
+------------------
+* Fix error #617 in TestNode
+* minitrace updated
+* fix issue #615 : don't execute preconditions if state is RUNNING
+* README.md
+* fix issue `#605 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/605>`_: strip whitespaces and better error message
+* Export cxx-standard with target. (`#604 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/604>`_)
+* feature `#603 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/603>`_: add static method [std::string description()] to manifest
+* fix issue with move semantic
+* Contributors: Davide Faconti, Sebastian Kasperski
 
 4.3.3 (2023-07-05)
 ------------------
@@ -29,6 +151,13 @@ Changelog for package behaviortree_cpp
 * fix ParallelAll
 * adding ParallelAll, WIP
 * Contributors: Davide Faconti, Oleksandr Perepadia
+
+4.3.2 (2023-06-27)
+------------------
+* fix `#595 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/595>`_ : improvement in blackboard/scripting types (`#597 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/597>`_)
+* Fix Issue 593 (`#594 <https://github.com/BehaviorTree/BehaviorTree.CPP/issues/594>`_): support skipping in Parallel node
+* adding ParallelAll
+* Contributors: Davide Faconti
 
 4.3.1 (2023-06-21)
 ------------------

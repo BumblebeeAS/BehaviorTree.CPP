@@ -1,5 +1,5 @@
 ![License MIT](https://img.shields.io/github/license/BumblebeeAS/BehaviorTree.CPP?color=blue)
-![Version](https://img.shields.io/badge/version-4.3-blue.svg)
+![Version](https://img.shields.io/badge/version-4.5-blue.svg)
 [![cmake Ubuntu](https://github.com/BumblebeeAS/BehaviorTree.CPP/actions/workflows/cmake_ubuntu.yml/badge.svg)](https://github.com/BumblebeeAS/BehaviorTree.CPP/actions/workflows/cmake_ubuntu.yml)
 [![cmake Windows](https://github.com/BumblebeeAS/BehaviorTree.CPP/actions/workflows/cmake_windows.yml/badge.svg)](https://github.com/BumblebeeAS/BehaviorTree.CPP/actions/workflows/cmake_windows.yml)
 [![ros1](https://github.com/BumblebeeAS/BehaviorTree.CPP/workflows/ros1/badge.svg?branch=master)](https://github.com/BumblebeeAS/BehaviorTree.CPP/actions?query=workflow%3Aros1)
@@ -7,7 +7,7 @@
 [![LGTM Grade](https://img.shields.io/lgtm/grade/cpp/github/BehaviorTree/BehaviorTree.CPP)](https://lgtm.com/projects/g/BehaviorTree/BehaviorTree.CPP/context:cpp)
 ![Discourse topics](https://img.shields.io/discourse/topics?server=https%3A%2F%2Fdiscourse.behaviortree.dev)
 
-# BehaviorTree.CPP 4.3
+# BehaviorTree.CPP 4.5
 
 <p align="center"><img width=350 src="animated.svg"></p>
 
@@ -39,7 +39,7 @@ to visualize, record, replay and analyze state transitions.
 You can learn about the main concepts, the API and the tutorials here: https://www.behaviortree.dev/
 
 If the documentation doesn't answer your questions and/or you want to
-connect with the other **BT.CPP** users, visit https://discourse.behaviortree.dev/
+connect with the other **BT.CPP** users, visit [our forum](https://github.com/BehaviorTree/BehaviorTree.CPP/discussions)
 
 ## Previous version
 
@@ -51,7 +51,7 @@ only in the master branch.
 
 # GUI Editor
 
-Editing a BehaviorTree is as simple as editing a XML file in your favourite text editor.
+Editing a BehaviorTree is as simple as editing an XML file in your favorite text editor.
 
 If you are looking for a more fancy graphical user interface (and I know you do) check
 [Groot2](https://www.behaviortree.dev/groot) out.
@@ -67,7 +67,7 @@ Three build systems are supported:
 - **catkin**, if you use ROS
 - **colcon (ament)**, if you use ROS2
 - **conan** otherwise (Linux/Windows).
-- **straight cmake** if you want to be personal responsible for depndencies :)
+- **straight cmake** if you want to be personally responsible for dependencies :)
 
 Compiling with [conan](https://conan.io/):
 
@@ -76,7 +76,7 @@ Assuming that you are in the **parent** directory of `BehaviorTree.CPP`:
 ```
 mkdir build; cd build
 conan install ../BehaviorTree.CPP --output-folder=. --build=missing
-cmake ../BehaviorTree.CPP -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake
+cmake ../BehaviorTree.CPP -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake"
 cmake --build . --parallel
 ```
 
@@ -94,8 +94,13 @@ example here: https://github.com/BehaviorTree/btcpp_sample .
 
 # Commercial support
 
-Are you using BT.CPP in your commercial product and you need technical support / consulting?
-You can contact the main author dfaconti@aurynrobotics.com to discuss your use case and needs.
+Are you using BT.CPP in your commercial product and do you need technical support / consulting?
+You can contact the primary author, **dfaconti@aurynrobotics.com**, to discuss your use case and needs.
+
+# Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=BehaviorTree/BehaviorTree.CPP&type=Date)](https://star-history.com/#BehaviorTree/BehaviorTree.CPP&Date)
+
 
 # License
 

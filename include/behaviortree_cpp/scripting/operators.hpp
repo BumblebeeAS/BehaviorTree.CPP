@@ -103,15 +103,15 @@ struct ExprUnaryArithmetic : ExprBase
     auto rhs_v = rhs->evaluate(env);
     if (rhs_v.isNumber())
     {
-      double rv = rhs_v.cast<double>();
+      const double rv = rhs_v.cast<double>();
       switch (op)
       {
         case negate:
           return Any(-rv);
         case complement:
-          return Any(double(~static_cast<int64_t>(rv)));
+          return Any(static_cast<double>(~static_cast<int64_t>(rv)));
         case logical_not:
-          return Any(double(!static_cast<bool>(rv)));
+          return Any(static_cast<double>(!static_cast<bool>(rv)));
       }
     }
     else if (rhs_v.isString())
@@ -252,7 +252,7 @@ struct ExprBinaryArithmetic : ExprBase
         }
       }
     }
-    else if (rhs_v.isType<SimpleString>() && lhs_v.isType<SimpleString>() && op == plus)
+    else if (rhs_v.isString() && lhs_v.isString() && op == plus)
     {
       return Any(lhs_v.cast<std::string>() + rhs_v.cast<std::string>());
     }
@@ -380,6 +380,16 @@ struct ExprComparison : ExprBase
           return False;
         }
       }
+      else if ((lhs_v.isString() && rhs_v.isNumber()) ||
+               (lhs_v.isNumber() && rhs_v.isString()))
+      {
+        auto lv = lhs_v.cast<double>();
+        auto rv = lhs_v.cast<double>();
+        if (!SwitchImpl(lv, rv, ops[i]))
+        {
+          return False;
+        }
+      }
       else
       {
         throw RuntimeError(StrCat("Can't mix different types in Comparison. "
@@ -478,7 +488,8 @@ struct ExprAssignment : ExprBase
         // fail otherwise
         auto msg = StrCat("The blackboard entry [", key,
                           "] doesn't exist, yet.\n"
-                          "If you want to create a new one, use the operator "
+                          "If you want to create a new one, "
+                          "use the operator "
                           "[:=] instead of [=]");
         throw RuntimeError(msg);
       }
@@ -502,7 +513,7 @@ struct ExprAssignment : ExprBase
     {
       // the very fist assignment can come from any type.
       // In the future, type check will be done by Any::copyInto
-      if (dst_ptr->empty() && entry->port_info.type() == typeid(PortInfo::AnyTypeAllowed))
+      if (dst_ptr->empty() && entry->info.type() == typeid(AnyTypeAllowed))
       {
         *dst_ptr = value;
       }
@@ -511,8 +522,8 @@ struct ExprAssignment : ExprBase
         // special case: string to other type.
         // Check if we can use the StringConverter
         auto const str = value.cast<std::string>();
-        const auto& port_info = env.vars->portInfo(key);
-        if (auto converter = port_info->converter())
+        const auto& entry_info = env.vars->entryInfo(key);
+        if (auto converter = entry_info->converter())
         {
           *dst_ptr = converter(str);
         }
@@ -530,10 +541,12 @@ struct ExprAssignment : ExprBase
         {
           value.copyInto(*dst_ptr);
         }
-        catch (RuntimeError&)
+        catch (std::exception&)
         {
           auto msg = StrCat(errorPrefix(), "\nThe right operand has type [",
-                            BT::demangle(value.type()), "] and can't be converted");
+                            BT::demangle(value.type()),
+                            "] and can't be converted to [",
+                            BT::demangle(dst_ptr->type()), "]");
           throw RuntimeError(msg);
         }
       }
@@ -802,7 +815,7 @@ struct stmt
   // This is because we can't easily know whether we need to request more input when seeing a
   // newline or not. Once we're having a e.g. parenthesized expression, we know that we need more
   // input until we've reached ), so then change the whitespace rule.
-  static constexpr auto whitespace = dsl::ascii::blank | escaped_newline;
+  static constexpr auto whitespace = dsl::ascii::blank | escaped_newline | dsl::newline;
 
   static constexpr auto rule = [] {
     // We can't use `dsl::eol` as our terminator directly,
