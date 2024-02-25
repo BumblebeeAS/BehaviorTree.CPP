@@ -24,6 +24,11 @@
 #include <tf2_ros/buffer.h>
 #endif
 
+#ifdef USING_ROS2
+#include <rclcpp/rclcpp.hpp>
+#include <tf2_ros/buffer.h>
+#endif
+
 namespace BT
 {
 
@@ -205,7 +210,30 @@ std::shared_ptr<tf2_ros::Buffer>& tf_buffer)
   if (loader.hasSymbol(PLUGIN_NH_SYMBOL))
   {
     Func func = (Func)loader.getSymbol(PLUGIN_NH_SYMBOL);
-    std::cout<< "Loading library [" << file_path << "]" << std::endl;
+    std::cout << "Loading library [" << file_path << "]" << std::endl;
+    func(*this, nh, tf_buffer);
+  }
+  else
+  {
+    std::cout << "ERROR loading library [" << file_path << "]: can't find symbol ["
+              << PLUGIN_NH_SYMBOL << "]" << std::endl;
+  }
+}
+#endif
+#ifdef USING_ROS2
+void BehaviorTreeFactory::registerFromPluginWithNh(
+    const std::string& file_path, rclcpp::Node::SharedPtr& nh,
+    std::shared_ptr<tf2_ros::Buffer>& tf_buffer)
+{
+  BT::SharedLibrary loader;
+  loader.load(file_path);
+  typedef void (*Func)(BehaviorTreeFactory&, rclcpp::Node::SharedPtr&,
+                       std::shared_ptr<tf2_ros::Buffer>&);
+
+  if (loader.hasSymbol(PLUGIN_NH_SYMBOL))
+  {
+    Func func = (Func)loader.getSymbol(PLUGIN_NH_SYMBOL);
+    std::cout << "Loading library [" << file_path << "]" << std::endl;
     func(*this, nh, tf_buffer);
   }
   else
