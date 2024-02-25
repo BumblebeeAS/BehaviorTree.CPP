@@ -541,10 +541,10 @@ TreeNode::Ptr XMLParser::PImpl::createNodeFromXML(const XMLElement* element,
     {
       const std::string attribute_name = att->Name();
       auto str_val = std::string{att->Value()};
-      if (str_val.size() == 0) {
-        throw RuntimeError("Error: Port ", att->Name(), " in Node ", element_name,
-                           " has an empty value which is banned!");
-      }
+      // if (str_val.size() == 0) {
+      //   throw RuntimeError("Error: Port ", att->Name(), " in Node ", element_name,
+      //                      " has an empty value which is banned!");
+      // }
       port_remap[attribute_name] = att->Value();
     }
   }
