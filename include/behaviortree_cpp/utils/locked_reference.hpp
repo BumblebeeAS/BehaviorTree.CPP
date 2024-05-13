@@ -18,14 +18,14 @@ class LockedPtr
 public:
   LockedPtr() = default;
 
-  LockedPtr(T* obj, std::mutex* obj_mutex):
-        ref_(obj), mutex_(obj_mutex) {
+  LockedPtr(T* obj, std::mutex* obj_mutex) : ref_(obj), mutex_(obj_mutex)
+  {
     mutex_->lock();
   }
 
   ~LockedPtr()
   {
-    if (mutex_)
+    if(mutex_)
     {
       mutex_->unlock();
     }
@@ -53,7 +53,7 @@ public:
 
   void lock()
   {
-    if (mutex_)
+    if(mutex_)
     {
       mutex_->lock();
     }
@@ -61,21 +61,24 @@ public:
 
   void unlock()
   {
-    if (mutex_)
+    if(mutex_)
     {
       mutex_->unlock();
     }
   }
 
-  const T* get() const{
+  const T* get() const
+  {
     return ref_;
   }
 
-  const T* operator->() const{
+  const T* operator->() const
+  {
     return ref_;
   }
 
-  T* operator->() {
+  T* operator->()
+  {
     return ref_;
   }
 
@@ -94,14 +97,15 @@ public:
     {
       other->copyInto(*ref_);
     }
-    else {
+    else
+    {
       *ref_ = T(other);
     }
   }
 
-  private:
+private:
   T* ref_ = nullptr;
   std::mutex* mutex_ = nullptr;
 };
 
-}   // namespace BT
+}  // namespace BT

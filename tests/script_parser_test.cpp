@@ -12,10 +12,10 @@ BT::Any GetScriptResult(BT::Ast::Environment& environment, const char* text)
   auto input = lexy::zstring_input<lexy::utf8_encoding>(text);
   auto result = lexy::parse<BT::Grammar::stmt>(input, lexy_ext::report_error);
 
-  if (result.has_value())
+  if(result.has_value())
   {
     auto exprs = LEXY_MOV(result).value();
-    for (auto i = 0u; i < exprs.size() - 1; ++i)
+    for(auto i = 0u; i < exprs.size() - 1; ++i)
     {
       exprs[i]->evaluate(environment);
     }
@@ -111,7 +111,7 @@ TEST(ParserTest, AnyTypes_Failing)
 
 TEST(ParserTest, Equations)
 {
-  BT::Ast::Environment environment = {BT::Blackboard::create(), {}};
+  BT::Ast::Environment environment = { BT::Blackboard::create(), {} };
 
   auto GetResult = [&environment](const char* text) -> BT::Any {
     return GetScriptResult(environment, text);
@@ -187,7 +187,7 @@ TEST(ParserTest, Equations)
 
   size_t prev_size = variables->getKeys().size();
   EXPECT_ANY_THROW(GetResult("new_var=69"));
-  EXPECT_EQ(variables->getKeys().size(), prev_size);   // shouldn't increase
+  EXPECT_EQ(variables->getKeys().size(), prev_size);  // shouldn't increase
 
   // check comparisons
   EXPECT_EQ(GetResult("x < y").cast<int>(), 1);
@@ -230,11 +230,15 @@ TEST(ParserTest, Equations)
 
   EXPECT_EQ(GetResult(" y == x  &&  x == 3 ").cast<int>(), 0);
   EXPECT_EQ(GetResult(" y == x  ||  x == 3 ").cast<int>(), 1);
+
+  // we expect string to be casted to number
+  EXPECT_EQ(GetResult(" par1:='3'; par2:=3; par1==par2").cast<int>(), 1);
+  EXPECT_EQ(GetResult(" par1:='3'; par2:=4; par1!=par2").cast<int>(), 1);
 }
 
 TEST(ParserTest, NotInitializedComparison)
 {
-  BT::Ast::Environment environment = {BT::Blackboard::create(), {}};
+  BT::Ast::Environment environment = { BT::Blackboard::create(), {} };
 
   auto GetResult = [&environment](const char* text) -> BT::Any {
     return GetScriptResult(environment, text);
@@ -251,7 +255,38 @@ TEST(ParserTest, NotInitializedComparison)
   EXPECT_ANY_THROW(GetResult("x += 1"));
 }
 
-TEST(ParserTest, Enums)
+TEST(ParserTest, EnumsBasic)
+{
+  BT::Ast::Environment environment = { BT::Blackboard::create(), {} };
+
+  auto GetResult = [&environment](const char* text) -> BT::Any {
+    return GetScriptResult(environment, text);
+  };
+
+  enum Color
+  {
+    RED = 1,
+    BLUE = 3,
+    GREEN = 5
+  };
+
+  environment.enums = std::make_shared<BT::EnumsTable>();
+  environment.enums->insert({ "RED", RED });
+  environment.enums->insert({ "BLUE", BLUE });
+  environment.enums->insert({ "GREEN", GREEN });
+  GetResult("A:=RED");
+  GetResult("B:=RED");
+  GetResult("C:=BLUE");
+
+  EXPECT_EQ(GetResult("A==B").cast<int>(), 1);
+  EXPECT_EQ(GetResult("A!=C").cast<int>(), 1);
+
+  EXPECT_EQ(GetResult("A").cast<Color>(), RED);
+  EXPECT_EQ(GetResult("B").cast<Color>(), RED);
+  EXPECT_EQ(GetResult("C").cast<Color>(), BLUE);
+}
+
+TEST(ParserTest, EnumsXML)
 {
   BT::BehaviorTreeFactory factory;
 
@@ -295,7 +330,7 @@ BT::NodeStatus checkLevel(BT::TreeNode& self)
   double percent = self.getInput<double>("percentage").value();
   DeviceType devType;
   auto res = self.getInput("deviceType", devType);
-  if (!res)
+  if(!res)
   {
     throw std::runtime_error(res.error());
   }
@@ -330,8 +365,8 @@ TEST(ParserTest, Enums_Issue_523)
   factory.registerNodeType<DummyNodes::SaySomething>("SaySomething");
   factory.registerSimpleCondition(
       "CheckLevel", std::bind(checkLevel, std::placeholders::_1),
-      {BT::InputPort("percentage"), BT::InputPort("deviceType"),
-       BT::OutputPort("isLowBattery")});
+      { BT::InputPort("percentage"), BT::InputPort("deviceType"),
+        BT::OutputPort("isLowBattery") });
 
   factory.registerScriptingEnums<DeviceType>();
 
@@ -348,8 +383,8 @@ TEST(ParserTest, Enums_Issue_523)
 class SampleNode595 : public BT::SyncActionNode
 {
 public:
-  SampleNode595(const std::string& name, const BT::NodeConfiguration& config) :
-    BT::SyncActionNode(name, config)
+  SampleNode595(const std::string& name, const BT::NodeConfiguration& config)
+    : BT::SyncActionNode(name, config)
   {}
 
   BT::NodeStatus tick() override
@@ -359,7 +394,7 @@ public:
   }
   static BT::PortsList providedPorts()
   {
-    return {BT::OutputPort<uint8_t>("find_enemy")};
+    return { BT::OutputPort<uint8_t>("find_enemy") };
   }
 };
 
@@ -398,7 +433,6 @@ TEST(ParserTest, NewLine)
       <Script code="A:=5;&#10;B:=6"/>
     </BehaviorTree>
   </root> )";
-
 
   auto tree = factory.createTreeFromText(xml_text);
   const auto status = tree.tickWhileRunning();

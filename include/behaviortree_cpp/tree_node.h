@@ -63,11 +63,11 @@ enum class PostCond
   COUNT_
 };
 
-template <> [[nodiscard]]
-std::string toStr<BT::PostCond>(const BT::PostCond& status);
+template <>
+[[nodiscard]] std::string toStr<BT::PostCond>(const BT::PostCond& status);
 
-template <> [[nodiscard]]
-std::string toStr<BT::PreCond>(const BT::PreCond& status);
+template <>
+[[nodiscard]] std::string toStr<BT::PreCond>(const BT::PreCond& status);
 
 using ScriptingEnumsRegistry = std::unordered_map<std::string, int>;
 
@@ -101,7 +101,6 @@ struct NodeConfig
 
 // back compatibility
 using NodeConfiguration = NodeConfig;
-
 
 template <typename T>
 inline constexpr bool hasNodeNameCtor()
@@ -164,10 +163,8 @@ public:
   using StatusChangeSubscriber = StatusChangeSignal::Subscriber;
   using StatusChangeCallback = StatusChangeSignal::CallableFunction;
 
-  using PreTickCallback =
-      std::function<NodeStatus(TreeNode&)>;
-  using PostTickCallback =
-      std::function<NodeStatus(TreeNode&, NodeStatus)>;
+  using PreTickCallback = std::function<NodeStatus(TreeNode&)>;
+  using PostTickCallback = std::function<NodeStatus(TreeNode&, NodeStatus)>;
 
   /**
      * @brief subscribeToStatusChange is used to attach a callback to a status change.
@@ -178,7 +175,8 @@ public:
      *
      * @return the subscriber handle.
      */
-  [[nodiscard]] StatusChangeSubscriber subscribeToStatusChange(StatusChangeCallback callback);
+  [[nodiscard]] StatusChangeSubscriber
+  subscribeToStatusChange(StatusChangeCallback callback);
 
   /** This method attaches to the TreeNode a callback with signature:
      *
@@ -221,22 +219,55 @@ public:
    * convertFromString<T>() is used automatically to parse the text.
    *
    * @param key   the name of the port.
+   * @param destination  reference to the object where the value should be stored
    * @return      false if an error occurs.
    */
   template <typename T>
   Result getInput(const std::string& key, T& destination) const;
+
+  /**
+   * @brief getInputStamped is similar to getInput(dey, destination),
+   * but it returne also the Timestamp object, that can be used to check if
+   * a value was updated and when.
+   *
+   * @param key   the name of the port.
+   * @param destination  reference to the object where the value should be stored
+   */
+  template <typename T>
+  [[nodiscard]] Expected<Timestamp> getInputStamped(const std::string& key,
+                                                    T& destination) const;
 
   /** Same as bool getInput(const std::string& key, T& destination)
    * but using optional.
    *
    * @param key   the name of the port.
    */
-  template <typename T> [[nodiscard]]
-  Expected<T> getInput(const std::string& key) const
+  template <typename T>
+  [[nodiscard]] Expected<T> getInput(const std::string& key) const
   {
     T out;
     auto res = getInput(key, out);
     return (res) ? Expected<T>(out) : nonstd::make_unexpected(res.error());
+  }
+
+  /** Same as bool getInputStamped(const std::string& key, T& destination)
+   * but return StampedValue<T>
+   *
+   * @param key   the name of the port.
+   */
+  template <typename T>
+  [[nodiscard]] Expected<StampedValue<T>> getInputStamped(const std::string& key) const
+  {
+    StampedValue<T> out;
+    if(auto res = getInputStamped(key, out.value))
+    {
+      out.stamp = *res;
+      return out;
+    }
+    else
+    {
+      return nonstd::make_unexpected(res.error());
+    }
   }
 
   /**
@@ -285,21 +316,18 @@ public:
   [[nodiscard]] StringView getRawPortValue(const std::string& key) const;
 
   /// Check a string and return true if it matches the pattern:  {...}
-  [[nodiscard]]
-  static bool isBlackboardPointer(StringView str, StringView* stripped_pointer = nullptr);
+  [[nodiscard]] static bool isBlackboardPointer(StringView str,
+                                                StringView* stripped_pointer = nullptr);
 
-  [[nodiscard]]
-  static StringView stripBlackboardPointer(StringView str);
+  [[nodiscard]] static StringView stripBlackboardPointer(StringView str);
 
-  [[nodiscard]]
-  static Expected<StringView> getRemappedKey(StringView port_name,
-                                             StringView remapped_port);
+  [[nodiscard]] static Expected<StringView> getRemappedKey(StringView port_name,
+                                                           StringView remapped_port);
 
   /// Notify that the tree should be ticked again()
   void emitWakeUpSignal();
 
-  [[nodiscard]]
-  bool requiresWakeUp() const;
+  [[nodiscard]] bool requiresWakeUp() const;
 
   /** Used to inject config into a node, even if it doesn't have the proper
      *  constructor
@@ -312,11 +340,11 @@ public:
     static_assert(hasNodeFullCtor<DerivedT, ExtraArgs...>() ||
                   hasNodeNameCtor<DerivedT>());
 
-    if constexpr (hasNodeFullCtor<DerivedT, ExtraArgs...>())
+    if constexpr(hasNodeFullCtor<DerivedT, ExtraArgs...>())
     {
       return std::make_unique<DerivedT>(name, config, args...);
     }
-    else if constexpr (hasNodeNameCtor<DerivedT>())
+    else if constexpr(hasNodeNameCtor<DerivedT>())
     {
       auto node_ptr = new DerivedT(name, args...);
       node_ptr->config() = config;
@@ -358,8 +386,10 @@ protected:
   PreScripts& preConditionsScripts();
   PostScripts& postConditionsScripts();
 
-private:
+  template <typename T>
+  T parseString(const std::string& str) const;
 
+private:
   struct PImpl;
   std::unique_ptr<PImpl> _p;
 
@@ -372,167 +402,151 @@ private:
 };
 
 //-------------------------------------------------------
+
 template <typename T>
-inline Result TreeNode::getInput(const std::string& key, T& destination) const
+T TreeNode::parseString(const std::string& str) const
 {
-  // address the special case where T is an enum
-  auto ParseString = [this](const std::string& str) -> T
+  if constexpr(std::is_enum_v<T> && !std::is_same_v<T, NodeStatus>)
   {
-    if (str.find('#') != std::string::npos) {
-      std::string res;
-      // if string contains value from blackboard, convert it first
-      auto tokens = BT::splitString(str, ';');
-      std::regex re("^(\\#\\{).+\\}");
-      bool all_valid = true;
-      for (const auto& token : tokens) {
-        if (std::regex_match(std::string(token), re)) {
-          // Remove ${ and }
-          auto token_trimmed = token.substr(2, token.size() - 3);
-          auto val = config().blackboard->getAnyLocked(std::string(token_trimmed)).get();
-          if (!val || val->empty())
-          {
-            std::cout << "Error: could not find value for key: "
-                      << token_trimmed << std::endl;
-            all_valid = false;
-            break;
-          }
-          const auto& type = val->type();
-          if (type == typeid(int)) {
-            res += std::to_string(val->cast<int>()).append(";");
-          } else if (type == typeid(double)) {
-            res += std::to_string(val->cast<double>()).append(";");
-          } else if (type == typeid(bool)) {
-            res += std::to_string(val->cast<bool>()).append(";");
-          } else if (type == typeid(float)) {
-            res += std::to_string(val->cast<float>()).append(";");
-          } else if (type == typeid(long)) {
-            res += std::to_string(val->cast<long>()).append(";");
-          } else if (type == typeid(std::string)) {
-            res += val->cast<std::string>().append(";");
-          } else {
-            std::cout << "Error: could not find value for key: "
-                      << token_trimmed << std::endl;
-            all_valid = false;
-            break;
-          }
-        } else {
-          res += std::string(token).append(";");
-        }
-      }
-      res = res.substr(0, res.size() - 1);
-      // std::cout << "Converted: " << str << " to " << res << std::endl;
-
-      if (all_valid) {
-        return convertFromString<T>(res);
-      }
-    }
-
-    (void)this; // maybe unused
-    if constexpr (std::is_enum_v<T> && !std::is_same_v<T, NodeStatus>)
+    auto it = config().enums->find(str);
+    // conversion available
+    if(it != config().enums->end())
     {
-      auto it = config().enums->find(str);
-      // conversion available
-      if( it != config().enums->end() )
-      {
-        return static_cast<T>(it->second);
-      }
-      else {
-        // hopefully str contains a number that can be parsed. May throw
-        return static_cast<T>(convertFromString<int>(str));
-      }
+      return static_cast<T>(it->second);
     }
-    else {
-      return convertFromString<T>(str);
+    else
+    {
+      // hopefully str contains a number that can be parsed. May throw
+      return static_cast<T>(convertFromString<int>(str));
     }
-  };
-
-  auto remap_it = config().input_ports.find(key);
-  if (remap_it == config().input_ports.end())
-  {
-    return nonstd::make_unexpected(StrCat("getInput() of node `", fullPath(),
-                                          "` failed because "
-                                          "NodeConfig::input_ports "
-                                          "does not contain the key: [",
-                                          key, "]"));
   }
+  return convertFromString<T>(str);
+}
 
-  // special case. Empty port value, we should use the default value,
-  // if available in the model.
-  // BUT, it the port type is a string, then an empty string might be
-  // a valid value
-  const std::string& port_value_str = remap_it->second;
-  if(port_value_str.empty() && config().manifest && config().manifest->ports.size() > 0)
+template <typename T>
+inline Expected<Timestamp> TreeNode::getInputStamped(const std::string& key,
+                                                     T& destination) const
+{
+  std::string port_value_str;
+
+  auto input_port_it = config().input_ports.find(key);
+  if(input_port_it != config().input_ports.end())
   {
-    const auto& port_manifest = config().manifest->ports.at(key);
-    const auto& default_value = port_manifest.defaultValue();
-    if(!default_value.empty() && !default_value.isString())
+    port_value_str = input_port_it->second;
+  }
+  else
+  {
+    // maybe it is declared with a default value in the manifest
+    auto port_manifest_it = config().manifest->ports.find(key);
+    if(port_manifest_it == config().manifest->ports.end())
     {
-      destination = default_value.cast<T>();
-      return {};
+      return nonstd::make_unexpected(StrCat("getInput() of node '", fullPath(),
+                                            "' failed because the manifest doesn't "
+                                            "contain the key: [",
+                                            key, "]"));
+    }
+    const auto& port_info = port_manifest_it->second;
+    // there is a default value
+    if(port_info.defaultValue().empty())
+    {
+      return nonstd::make_unexpected(StrCat("getInput() of node '", fullPath(),
+                                            "' failed because nor the manifest or the "
+                                            "XML contain the key: [",
+                                            key, "]"));
+    }
+    if(port_info.defaultValue().isString())
+    {
+      port_value_str = port_info.defaultValue().cast<std::string>();
+    }
+    else
+    {
+      destination = port_info.defaultValue().cast<T>();
+      return Timestamp{};
     }
   }
 
-  auto remapped_res = getRemappedKey(key, port_value_str);
+  auto blackboard_ptr = getRemappedKey(key, port_value_str);
   try
   {
     // pure string, not a blackboard key
-    if (!remapped_res)
+    if(!blackboard_ptr)
     {
-      destination = ParseString(port_value_str);
-      return {};
-    }
-    const auto& remapped_key = remapped_res.value();
-
-    if (!config().blackboard)
-    {
-      return nonstd::make_unexpected("getInput(): trying to access an invalid Blackboard");
-    }
-
-    if (auto any_ref = config().blackboard->getAnyLocked(std::string(remapped_key)))
-    {
-      auto val = any_ref.get();
-      // support getInput<Any>()
-      if constexpr (std::is_same_v<T, Any>)
+      try
       {
-        destination = *val;
-        return {};
+        destination = parseString<T>(port_value_str);
+      }
+      catch(std::exception& ex)
+      {
+        return nonstd::make_unexpected(StrCat("getInput(): ", ex.what()));
+      }
+      return Timestamp{};
+    }
+    const auto& blackboard_key = blackboard_ptr.value();
+
+    if(!config().blackboard)
+    {
+      return nonstd::make_unexpected("getInput(): trying to access "
+                                     "an invalid Blackboard");
+    }
+
+    if(auto entry = config().blackboard->getEntry(std::string(blackboard_key)))
+    {
+      std::unique_lock lk(entry->entry_mutex);
+      auto& any_value = entry->value;
+
+      // support getInput<Any>()
+      if constexpr(std::is_same_v<T, Any>)
+      {
+        destination = any_value;
+        return Timestamp{ entry->sequence_id, entry->stamp };
       }
 
-      if(!val->empty())
+      if(!entry->value.empty())
       {
-        if (!std::is_same_v<T, std::string> && val->isString())
+        if(!std::is_same_v<T, std::string> && any_value.isString())
         {
-          destination = ParseString(val->cast<std::string>());
+          destination = parseString<T>(any_value.cast<std::string>());
         }
         else
         {
-          destination = val->cast<T>();
+          destination = any_value.cast<T>();
         }
-        return {};
+        return Timestamp{ entry->sequence_id, entry->stamp };
       }
     }
 
     return nonstd::make_unexpected(StrCat("getInput() failed because it was unable to "
-                                          "find the key [", key, "] remapped to [",
-                                          remapped_key, "]"));
+                                          "find the key [",
+                                          key, "] remapped to [", blackboard_key, "]"));
   }
-  catch (std::exception& err)
+  catch(std::exception& err)
   {
     return nonstd::make_unexpected(err.what());
   }
 }
 
 template <typename T>
+inline Result TreeNode::getInput(const std::string& key, T& destination) const
+{
+  auto res = getInputStamped(key, destination);
+  if(!res)
+  {
+    return nonstd::make_unexpected(res.error());
+  }
+  return {};
+}
+
+template <typename T>
 inline Result TreeNode::setOutput(const std::string& key, const T& value)
 {
-  if (!config().blackboard)
+  if(!config().blackboard)
   {
     return nonstd::make_unexpected("setOutput() failed: trying to access a "
                                    "Blackboard(BB) entry, but BB is invalid");
   }
 
   auto remap_it = config().output_ports.find(key);
-  if (remap_it == config().output_ports.end())
+  if(remap_it == config().output_ports.end())
   {
     return nonstd::make_unexpected(StrCat("setOutput() failed: "
                                           "NodeConfig::output_ports "
@@ -540,13 +554,13 @@ inline Result TreeNode::setOutput(const std::string& key, const T& value)
                                           key, "]"));
   }
   StringView remapped_key = remap_it->second;
-  if (remapped_key == "=")
+  if(remapped_key == "{=}" || remapped_key == "=")
   {
     config().blackboard->set(static_cast<std::string>(key), value);
     return {};
   }
 
-  if (!isBlackboardPointer(remapped_key))
+  if(!isBlackboardPointer(remapped_key))
   {
     return nonstd::make_unexpected("setOutput requires a blackboard pointer. Use {}");
   }
@@ -570,21 +584,21 @@ inline Result TreeNode::setOutput(const std::string& key, const T& value)
 template <typename T>
 inline void assignDefaultRemapping(NodeConfig& config)
 {
-  for (const auto& it : getProvidedPorts<T>())
+  for(const auto& it : getProvidedPorts<T>())
   {
     const auto& port_name = it.first;
     const auto direction = it.second.direction();
-    if (direction != PortDirection::OUTPUT)
+    if(direction != PortDirection::OUTPUT)
     {
       // PortDirection::{INPUT,INOUT}
-      config.input_ports[port_name] = "=";
+      config.input_ports[port_name] = "{=}";
     }
-    if (direction != PortDirection::INPUT)
+    if(direction != PortDirection::INPUT)
     {
       // PortDirection::{OUTPUT,INOUT}
-      config.output_ports[port_name] = "=";
+      config.output_ports[port_name] = "{=}";
     }
   }
 }
 
-}   // namespace BT
+}  // namespace BT

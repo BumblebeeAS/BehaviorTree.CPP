@@ -36,8 +36,8 @@ class Action_A : public SyncActionNode
 public:
   // additional arguments passed to the constructor
   Action_A(const std::string& name, const NodeConfig& config, int arg_int,
-           std::string arg_str, NoCopyObj& nc) :
-    SyncActionNode(name, config), _arg1(arg_int), _arg2(arg_str), _nc(nc)
+           std::string arg_str, NoCopyObj& nc)
+    : SyncActionNode(name, config), _arg1(arg_int), _arg2(arg_str), _nc(nc)
   {}
 
   NodeStatus tick() override
@@ -61,8 +61,8 @@ private:
 class Action_B : public SyncActionNode
 {
 public:
-  Action_B(const std::string& name, const NodeConfig& config) :
-    SyncActionNode(name, config)
+  Action_B(const std::string& name, const NodeConfig& config)
+    : SyncActionNode(name, config)
   {}
 
   // we want this method to be called ONCE and BEFORE the first tick()
@@ -118,7 +118,7 @@ int main()
   auto tree = factory.createTreeFromText(xml_text);
 
   auto visitor = [](TreeNode* node) {
-    if (auto action_B_node = dynamic_cast<Action_B*>(node))
+    if(auto action_B_node = dynamic_cast<Action_B*>(node))
     {
       action_B_node->initialize(69, "interesting_value");
     }

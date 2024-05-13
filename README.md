@@ -7,7 +7,7 @@
 [![LGTM Grade](https://img.shields.io/lgtm/grade/cpp/github/BehaviorTree/BehaviorTree.CPP)](https://lgtm.com/projects/g/BehaviorTree/BehaviorTree.CPP/context:cpp)
 ![Discourse topics](https://img.shields.io/discourse/topics?server=https%3A%2F%2Fdiscourse.behaviortree.dev)
 
-# BehaviorTree.CPP 4.5
+# BehaviorTree.CPP 4.6
 
 <p align="center"><img width=350 src="animated.svg"></p>
 
@@ -40,14 +40,6 @@ You can learn about the main concepts, the API and the tutorials here: https://w
 
 If the documentation doesn't answer your questions and/or you want to
 connect with the other **BT.CPP** users, visit [our forum](https://github.com/BehaviorTree/BehaviorTree.CPP/discussions)
-
-## Previous version
-
-Version 3.8 of the software can be found in the branch
-[v3.8](https://github.com/BehaviorTree/BehaviorTree.CPP/tree/v3.8).
-
-That branch might receive bug fixes, but the new features will be implemented
-only in the master branch.
 
 # GUI Editor
 
@@ -89,6 +81,11 @@ cmake ../BehaviorTree.CPP
 cmake --build . --parallel
 ```
 
+If you want to build in a [pixi](https://pixi.sh/) project (conda virtual environment).
+```
+pixi run build
+```
+
 If you want to use BT.CPP in your application, please refer to the
 example here: https://github.com/BehaviorTree/btcpp_sample .
 
@@ -101,6 +98,13 @@ You can contact the primary author, **dfaconti@aurynrobotics.com**, to discuss y
 
 [![Star History Chart](https://api.star-history.com/svg?repos=BehaviorTree/BehaviorTree.CPP&type=Date)](https://star-history.com/#BehaviorTree/BehaviorTree.CPP&Date)
 
+## Previous version
+
+Version 3.8 of the software can be found in the branch
+[v3.8](https://github.com/BehaviorTree/BehaviorTree.CPP/tree/v3.8).
+
+That branch might receive bug fixes, but the new features will be implemented
+only in the master branch.
 
 # License
 

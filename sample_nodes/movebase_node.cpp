@@ -10,7 +10,7 @@ BT_REGISTER_NODES(factory)
 
 BT::NodeStatus MoveBaseAction::onStart()
 {
-  if (!getInput<Pose2D>("goal", _goal))
+  if(!getInput<Pose2D>("goal", _goal))
   {
     throw BT::RuntimeError("missing required input [goal]");
   }

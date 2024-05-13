@@ -32,7 +32,7 @@ struct Environment
   BT::Blackboard::Ptr vars;
   EnumsTablePtr enums;
 };
-}   // namespace Ast
+}  // namespace Ast
 
 /**
  * @brief ValidateScript will check if a certain string is valid.
@@ -45,4 +45,4 @@ Expected<ScriptFunction> ParseScript(const std::string& script);
 
 Expected<Any> ParseScriptAndExecute(Ast::Environment& env, const std::string& script);
 
-}   // namespace BT
+}  // namespace BT

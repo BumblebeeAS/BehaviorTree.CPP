@@ -146,11 +146,11 @@ TEST(SkippingLogic, SkippingReactiveSequence)
 
   int expected_test_A_ticks = 0;
 
-  for (auto const* xml_text : {&xml_text_noskip, &xml_text_skip})
+  for(auto const* xml_text : { &xml_text_noskip, &xml_text_skip })
   {
     auto tree = factory.createTreeFromText(*xml_text);
 
-    for (int repeat = 0; repeat < 3; repeat++)
+    for(int repeat = 0; repeat < 3; repeat++)
     {
       NodeStatus status = NodeStatus::IDLE;
       while (!isStatusCompleted(status))
@@ -162,7 +162,7 @@ TEST(SkippingLogic, SkippingReactiveSequence)
           expected_test_A_ticks++;
         }
 
-        tree.sleep(std::chrono::milliseconds{15});
+        tree.sleep(std::chrono::milliseconds{ 15 });
       }
       ASSERT_EQ(status, NodeStatus::SUCCESS);
     }
@@ -204,7 +204,7 @@ TEST(SkippingLogic, WhileSkip)
        </BehaviorTree>
     </root>)";
 
-  for (auto const* xml_text : {&xml_text_noskip, &xml_text_skip})
+  for(auto const* xml_text : { &xml_text_noskip, &xml_text_skip })
   {
     auto tree = factory.createTreeFromText(*xml_text);
     NodeStatus status = tree.tickWhileRunning();

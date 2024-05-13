@@ -22,7 +22,7 @@ NodeStatus CrossDoor::passThroughDoor()
 NodeStatus CrossDoor::openDoor()
 {
   SleepMS(500);
-  if (_door_locked)
+  if(_door_locked)
   {
     return NodeStatus::FAILURE;
   }
@@ -37,7 +37,7 @@ NodeStatus CrossDoor::pickLock()
 {
   SleepMS(500);
   // succeed at 3rd attempt
-  if (_pick_attempts++ > 3)
+  if(_pick_attempts++ > 3)
   {
     _door_locked = false;
     _door_open = true;

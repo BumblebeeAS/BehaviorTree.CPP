@@ -1,4 +1,4 @@
-﻿/*  Copyright (C) 2022 Davide Faconti -  All Rights Reserved
+/*  Copyright (C) 2022 Davide Faconti -  All Rights Reserved
 *
 *   Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
 *   to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
@@ -13,12 +13,9 @@
 #pragma once
 
 #include <cmath>
-#include <cstdio>
-#include <unordered_map>
 #include <memory>
 #include <string>
 #include <vector>
-#include <utility>
 
 #include "behaviortree_cpp/scripting/any_types.hpp"
 #include "behaviortree_cpp/scripting/script_parser.hpp"
@@ -29,6 +26,29 @@ namespace BT::Ast
 using SimpleString = SafeAny::SimpleString;
 
 using expr_ptr = std::shared_ptr<struct ExprBase>;
+
+// extended strin to number that consider enums and booleans
+double StringToDouble(const Any& value, const Environment& env)
+{
+  const auto str = value.cast<std::string>();
+  if(str == "true")
+  {
+    return 1.0;
+  }
+  if(str == "false")
+  {
+    return 0.0;
+  }
+  if(env.enums)
+  {
+    auto it = env.enums->find(str);
+    if(it != env.enums->end())
+    {
+      return it->second;
+    }
+  }
+  return value.cast<double>();
+}
 
 struct ExprBase
 {
@@ -67,17 +87,17 @@ struct ExprName : ExprBase
   Any evaluate(Environment& env) const override
   {
     //search first in the enums table
-    if (env.enums)
+    if(env.enums)
     {
       auto enum_ptr = env.enums->find(name);
-      if (enum_ptr != env.enums->end())
+      if(enum_ptr != env.enums->end())
       {
         return Any(double(enum_ptr->second));
       }
     }
     // search now in the variables table
     auto any_ref = env.vars->getAnyLocked(name);
-    if (!any_ref)
+    if(!any_ref)
     {
       throw RuntimeError(StrCat("Variable not found: ", name));
     }
@@ -101,10 +121,10 @@ struct ExprUnaryArithmetic : ExprBase
   Any evaluate(Environment& env) const override
   {
     auto rhs_v = rhs->evaluate(env);
-    if (rhs_v.isNumber())
+    if(rhs_v.isNumber())
     {
       const double rv = rhs_v.cast<double>();
-      switch (op)
+      switch(op)
       {
         case negate:
           return Any(-rv);
@@ -114,7 +134,7 @@ struct ExprUnaryArithmetic : ExprBase
           return Any(static_cast<double>(!static_cast<bool>(rv)));
       }
     }
-    else if (rhs_v.isString())
+    else if(rhs_v.isString())
     {
       throw RuntimeError("Invalid operator for std::string");
     }
@@ -130,6 +150,7 @@ struct ExprBinaryArithmetic : ExprBase
     minus,
     times,
     div,
+    concat,
 
     bit_and,
     bit_or,
@@ -141,7 +162,7 @@ struct ExprBinaryArithmetic : ExprBase
 
   const char* opStr() const
   {
-    switch (op)
+    switch(op)
     {
       case plus:
         return "+";
@@ -151,6 +172,8 @@ struct ExprBinaryArithmetic : ExprBase
         return "*";
       case div:
         return "/";
+      case concat:
+        return "..";
       case bit_and:
         return "&";
       case bit_or:
@@ -167,8 +190,8 @@ struct ExprBinaryArithmetic : ExprBase
 
   expr_ptr lhs, rhs;
 
-  explicit ExprBinaryArithmetic(expr_ptr lhs, op_t op, expr_ptr rhs) :
-    op(op), lhs(LEXY_MOV(lhs)), rhs(LEXY_MOV(rhs))
+  explicit ExprBinaryArithmetic(expr_ptr lhs, op_t op, expr_ptr rhs)
+    : op(op), lhs(LEXY_MOV(lhs)), rhs(LEXY_MOV(rhs))
   {}
 
   Any evaluate(Environment& env) const override
@@ -176,21 +199,21 @@ struct ExprBinaryArithmetic : ExprBase
     auto lhs_v = lhs->evaluate(env);
     auto rhs_v = rhs->evaluate(env);
 
-    if (lhs_v.empty())
+    if(lhs_v.empty())
     {
       throw RuntimeError(ErrorNotInit("left", opStr()));
     }
-    if (rhs_v.empty())
+    if(rhs_v.empty())
     {
       throw RuntimeError(ErrorNotInit("right", opStr()));
     }
 
-    if (rhs_v.isNumber() && lhs_v.isNumber())
+    if(rhs_v.isNumber() && lhs_v.isNumber())
     {
       auto lv = lhs_v.cast<double>();
       auto rv = rhs_v.cast<double>();
 
-      switch (op)
+      switch(op)
       {
         case plus:
           return Any(lv + rv);
@@ -204,13 +227,13 @@ struct ExprBinaryArithmetic : ExprBase
         }
       }
 
-      if (op == bit_and || op == bit_or || op == bit_xor)
+      if(op == bit_and || op == bit_or || op == bit_xor)
       {
         try
         {
           int64_t li = lhs_v.cast<int64_t>();
           int64_t ri = rhs_v.cast<int64_t>();
-          switch (op)
+          switch(op)
           {
             case bit_and:
               return Any(static_cast<double>(li & ri));
@@ -222,20 +245,20 @@ struct ExprBinaryArithmetic : ExprBase
             }
           }
         }
-        catch (...)
+        catch(...)
         {
           throw RuntimeError("Binary operators are not allowed if "
                              "one of the operands is not an integer");
         }
       }
 
-      if (op == logic_or || op == logic_and)
+      if(op == logic_or || op == logic_and)
       {
         try
         {
           auto lb = lhs_v.cast<bool>();
           auto rb = rhs_v.cast<bool>();
-          switch (op)
+          switch(op)
           {
             case logic_or:
               return Any(static_cast<double>(lb || rb));
@@ -245,14 +268,20 @@ struct ExprBinaryArithmetic : ExprBase
             }
           }
         }
-        catch (...)
+        catch(...)
         {
           throw RuntimeError("Logic operators are not allowed if "
                              "one of the operands is not castable to bool");
         }
       }
     }
-    else if (rhs_v.isString() && lhs_v.isString() && op == plus)
+    else if(rhs_v.isString() && lhs_v.isString() && op == plus)
+    {
+      return Any(lhs_v.cast<std::string>() + rhs_v.cast<std::string>());
+    }
+    else if(op == concat && ((rhs_v.isString() && lhs_v.isString()) ||
+                             (rhs_v.isString() && lhs_v.isNumber()) ||
+                             (rhs_v.isNumber() && lhs_v.isString())))
     {
       return Any(lhs_v.cast<std::string>() + rhs_v.cast<std::string>());
     }
@@ -261,14 +290,14 @@ struct ExprBinaryArithmetic : ExprBase
       throw RuntimeError("Operation not permitted");
     }
 
-    return {};   // unreachable
+    return {};  // unreachable
   }
 };
 
 template <typename T>
 bool IsSame(const T& lv, const T& rv)
 {
-  if constexpr (std::is_same_v<double, T>)
+  if constexpr(std::is_same_v<double, T>)
   {
     constexpr double EPS = static_cast<double>(std::numeric_limits<float>::epsilon());
     return std::abs(lv - rv) <= EPS;
@@ -293,7 +322,7 @@ struct ExprComparison : ExprBase
 
   const char* opStr(op_t op) const
   {
-    switch (op)
+    switch(op)
     {
       case equal:
         return "==";
@@ -317,30 +346,30 @@ struct ExprComparison : ExprBase
   Any evaluate(Environment& env) const override
   {
     auto SwitchImpl = [&](const auto& lv, const auto& rv, op_t op) {
-      switch (op)
+      switch(op)
       {
         case equal:
-          if (!IsSame(lv, rv))
+          if(!IsSame(lv, rv))
             return false;
           break;
         case not_equal:
-          if (IsSame(lv, rv))
+          if(IsSame(lv, rv))
             return false;
           break;
         case less:
-          if (lv >= rv)
+          if(lv >= rv)
             return false;
           break;
         case greater:
-          if (lv <= rv)
+          if(lv <= rv)
             return false;
           break;
         case less_equal:
-          if (lv > rv)
+          if(lv > rv)
             return false;
           break;
         case greater_equal:
-          if (lv < rv)
+          if(lv < rv)
             return false;
           break;
       }
@@ -348,44 +377,52 @@ struct ExprComparison : ExprBase
     };
 
     auto lhs_v = operands[0]->evaluate(env);
-    for (auto i = 0u; i != ops.size(); ++i)
+    for(auto i = 0u; i != ops.size(); ++i)
     {
       auto rhs_v = operands[i + 1]->evaluate(env);
 
-      if (lhs_v.empty())
+      if(lhs_v.empty())
       {
         throw RuntimeError(ErrorNotInit("left", opStr(ops[i])));
       }
-      if (rhs_v.empty())
+      if(rhs_v.empty())
       {
         throw RuntimeError(ErrorNotInit("right", opStr(ops[i])));
       }
       const Any False(0.0);
 
-      if (lhs_v.isNumber() && rhs_v.isNumber())
+      if(lhs_v.isNumber() && rhs_v.isNumber())
       {
         auto lv = lhs_v.cast<double>();
         auto rv = rhs_v.cast<double>();
-        if (!SwitchImpl(lv, rv, ops[i]))
+        if(!SwitchImpl(lv, rv, ops[i]))
         {
           return False;
         }
       }
-      else if (lhs_v.isString() && rhs_v.isString())
+      else if(lhs_v.isString() && rhs_v.isString())
       {
         auto lv = lhs_v.cast<SimpleString>();
         auto rv = rhs_v.cast<SimpleString>();
-        if (!SwitchImpl(lv, rv, ops[i]))
+        if(!SwitchImpl(lv, rv, ops[i]))
         {
           return False;
         }
       }
-      else if ((lhs_v.isString() && rhs_v.isNumber()) ||
-               (lhs_v.isNumber() && rhs_v.isString()))
+      else if(lhs_v.isString() && rhs_v.isNumber())
+      {
+        auto lv = StringToDouble(lhs_v, env);
+        auto rv = rhs_v.cast<double>();
+        if(!SwitchImpl(lv, rv, ops[i]))
+        {
+          return False;
+        }
+      }
+      else if(lhs_v.isNumber() && rhs_v.isString())
       {
         auto lv = lhs_v.cast<double>();
-        auto rv = lhs_v.cast<double>();
-        if (!SwitchImpl(lv, rv, ops[i]))
+        auto rv = StringToDouble(rhs_v, env);
+        if(!SwitchImpl(lv, rv, ops[i]))
         {
           return False;
         }
@@ -407,8 +444,8 @@ struct ExprIf : ExprBase
 {
   expr_ptr condition, then, else_;
 
-  explicit ExprIf(expr_ptr condition, expr_ptr then, expr_ptr else_) :
-    condition(LEXY_MOV(condition)), then(LEXY_MOV(then)), else_(LEXY_MOV(else_))
+  explicit ExprIf(expr_ptr condition, expr_ptr then, expr_ptr else_)
+    : condition(LEXY_MOV(condition)), then(LEXY_MOV(then)), else_(LEXY_MOV(else_))
   {}
 
   Any evaluate(Environment& env) const override
@@ -416,7 +453,7 @@ struct ExprIf : ExprBase
     const auto& v = condition->evaluate(env);
     bool valid = (v.isType<SimpleString>() && v.cast<SimpleString>().size() > 0) ||
                  (v.cast<double>() != 0.0);
-    if (valid)
+    if(valid)
     {
       return then->evaluate(env);
     }
@@ -441,7 +478,7 @@ struct ExprAssignment : ExprBase
 
   const char* opStr() const
   {
-    switch (op)
+    switch(op)
     {
       case assign_create:
         return ":=";
@@ -461,27 +498,31 @@ struct ExprAssignment : ExprBase
 
   expr_ptr lhs, rhs;
 
-  explicit ExprAssignment(expr_ptr _lhs, op_t op, expr_ptr _rhs) :
-    op(op), lhs(LEXY_MOV(_lhs)), rhs(LEXY_MOV(_rhs))
+  explicit ExprAssignment(expr_ptr _lhs, op_t op, expr_ptr _rhs)
+    : op(op), lhs(LEXY_MOV(_lhs)), rhs(LEXY_MOV(_rhs))
   {}
 
   Any evaluate(Environment& env) const override
   {
     auto varname = dynamic_cast<ExprName*>(lhs.get());
-    if (!varname)
+    if(!varname)
     {
       throw RuntimeError("Assignment left operand not a blackboard entry");
     }
     const auto& key = varname->name;
 
     auto entry = env.vars->getEntry(key);
-    if (!entry)
+    if(!entry)
     {
       // variable doesn't exist, create it if using operator assign_create
-      if (op == assign_create)
+      if(op == assign_create)
       {
         env.vars->createEntry(key, PortInfo());
         entry = env.vars->getEntry(key);
+        if(!entry)
+        {
+          throw LogicError("Bug: report");
+        }
       }
       else
       {
@@ -497,41 +538,48 @@ struct ExprAssignment : ExprBase
     auto value = rhs->evaluate(env);
 
     std::scoped_lock lock(entry->entry_mutex);
-    auto dst_ptr = &entry->value;
+    auto* dst_ptr = &entry->value;
 
     auto errorPrefix = [dst_ptr, &key]() {
       return StrCat("Error assigning a value to entry [", key, "] with type [",
                     BT::demangle(dst_ptr->type()), "]. ");
     };
 
-    if (value.empty())
+    if(value.empty())
     {
       throw RuntimeError(ErrorNotInit("right", opStr()));
     }
 
-    if (op == assign_create || op == assign_existing)
+    if(op == assign_create || op == assign_existing)
     {
       // the very fist assignment can come from any type.
       // In the future, type check will be done by Any::copyInto
-      if (dst_ptr->empty() && entry->info.type() == typeid(AnyTypeAllowed))
+      if(dst_ptr->empty() && entry->info.type() == typeid(AnyTypeAllowed))
       {
         *dst_ptr = value;
       }
-      else if (value.isString() && !dst_ptr->isString())
+      else if(value.isString() && !dst_ptr->isString())
       {
         // special case: string to other type.
         // Check if we can use the StringConverter
         auto const str = value.cast<std::string>();
-        const auto& entry_info = env.vars->entryInfo(key);
-        if (auto converter = entry_info->converter())
+        const auto* entry_info = env.vars->entryInfo(key);
+
+        if(auto converter = entry_info->converter())
         {
           *dst_ptr = converter(str);
         }
+        else if(dst_ptr->isNumber())
+        {
+          auto num_value = StringToDouble(value, env);
+          *dst_ptr = Any(num_value);
+        }
         else
         {
-          auto msg = StrCat(errorPrefix(), "\nThe right operand is a string but"
-                                           "can't find the corresponding "
-                                           "convertFromString<T>().");
+          auto msg = StrCat(errorPrefix(),
+                            "\nThe right operand is a string, "
+                            "can't convert to ",
+                            demangle(dst_ptr->type()));
           throw RuntimeError(msg);
         }
       }
@@ -541,19 +589,20 @@ struct ExprAssignment : ExprBase
         {
           value.copyInto(*dst_ptr);
         }
-        catch (std::exception&)
+        catch(std::exception&)
         {
           auto msg = StrCat(errorPrefix(), "\nThe right operand has type [",
-                            BT::demangle(value.type()),
-                            "] and can't be converted to [",
+                            BT::demangle(value.type()), "] and can't be converted to [",
                             BT::demangle(dst_ptr->type()), "]");
           throw RuntimeError(msg);
         }
       }
+      entry->sequence_id++;
+      entry->stamp = std::chrono::steady_clock::now().time_since_epoch();
       return *dst_ptr;
     }
 
-    if (dst_ptr->empty())
+    if(dst_ptr->empty())
     {
       throw RuntimeError(ErrorNotInit("left", opStr()));
     }
@@ -561,9 +610,9 @@ struct ExprAssignment : ExprBase
     // temporary use
     Any temp_variable = *dst_ptr;
 
-    if (value.isNumber())
+    if(value.isNumber())
     {
-      if (!temp_variable.isNumber())
+      if(!temp_variable.isNumber())
       {
         throw RuntimeError("This Assignment operator can't be used "
                            "with a non-numeric type");
@@ -571,7 +620,7 @@ struct ExprAssignment : ExprBase
 
       auto lv = temp_variable.cast<double>();
       auto rv = value.cast<double>();
-      switch (op)
+      switch(op)
       {
         case assign_plus:
           temp_variable = Any(lv + rv);
@@ -589,9 +638,9 @@ struct ExprAssignment : ExprBase
         }
       }
     }
-    else if (value.isString())
+    else if(value.isString())
     {
-      if (op == assign_plus)
+      if(op == assign_plus)
       {
         auto lv = temp_variable.cast<std::string>();
         auto rv = value.cast<std::string>();
@@ -604,25 +653,18 @@ struct ExprAssignment : ExprBase
     }
 
     temp_variable.copyInto(*dst_ptr);
+    entry->sequence_id++;
+    entry->stamp = std::chrono::steady_clock::now().time_since_epoch();
     return *dst_ptr;
   }
 };
-}   // namespace BT::Ast
+}  // namespace BT::Ast
 
 namespace BT::Grammar
 {
 namespace dsl = lexy::dsl;
 
 constexpr auto escaped_newline = dsl::backslash >> dsl::newline;
-
-// A Unicode-aware identifier.
-struct Name
-{
-  static constexpr auto rule =
-      dsl::identifier(dsl::unicode::xid_start_underscore, dsl::unicode::xid_continue);
-
-  static constexpr auto value = lexy::as_string<std::string>;
-};
 
 // An expression that is nested inside another expression.
 struct nested_expr : lexy::transparent_production
@@ -693,6 +735,16 @@ struct Expression : lexy::expression_production
     using operand = math_product;
   };
 
+  // x .. y
+  struct string_concat : dsl::infix_op_left
+  {
+    static constexpr auto op = [] {
+      return dsl::op<Ast::ExprBinaryArithmetic::concat>(LEXY_LIT(".."));
+    }();
+
+    using operand = math_sum;
+  };
+
   // ~x
   struct bit_prefix : dsl::prefix_op
   {
@@ -756,7 +808,7 @@ struct Expression : lexy::expression_production
         dsl::op<Ast::ExprBinaryArithmetic::logic_or>(LEXY_LIT("||")) /
         dsl::op<Ast::ExprBinaryArithmetic::logic_and>(LEXY_LIT("&&"));
 
-    using operand = comparison;
+    using operand = dsl::groups<string_concat, comparison>;
   };
 
   // x ? y : z
@@ -827,4 +879,4 @@ struct stmt
   static constexpr auto value = lexy::as_list<std::vector<Ast::expr_ptr>>;
 };
 
-}   // namespace BT::Grammar
+}  // namespace BT::Grammar

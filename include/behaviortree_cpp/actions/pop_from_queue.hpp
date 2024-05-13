@@ -17,6 +17,7 @@
 #include "behaviortree_cpp/action_node.h"
 #include "behaviortree_cpp/decorator_node.h"
 
+
 /**
  * Template Action used in ex04_waypoints.cpp example.
  *
@@ -33,6 +34,8 @@ namespace BT
 template <typename T>
 struct ProtectedQueue
 {
+  std::list<T> items;
+  std::mutex mtx;
   std::list<T> items;
   std::mutex mtx;
 };

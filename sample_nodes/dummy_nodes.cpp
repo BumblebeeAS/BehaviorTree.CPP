@@ -50,7 +50,7 @@ BT::NodeStatus ApproachObject::tick()
 BT::NodeStatus SaySomething::tick()
 {
   auto msg = getInput<std::string>("message");
-  if (!msg)
+  if(!msg)
   {
     throw BT::RuntimeError("missing required input [message]: ", msg.error());
   }
@@ -62,7 +62,7 @@ BT::NodeStatus SaySomething::tick()
 BT::NodeStatus SaySomethingSimple(BT::TreeNode& self)
 {
   auto msg = self.getInput<std::string>("message");
-  if (!msg)
+  if(!msg)
   {
     throw BT::RuntimeError("missing required input [message]: ", msg.error());
   }
@@ -71,4 +71,4 @@ BT::NodeStatus SaySomethingSimple(BT::TreeNode& self)
   return BT::NodeStatus::SUCCESS;
 }
 
-}   // namespace DummyNodes
+}  // namespace DummyNodes
