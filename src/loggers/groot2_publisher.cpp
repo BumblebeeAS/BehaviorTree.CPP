@@ -114,8 +114,17 @@ Groot2Publisher::Groot2Publisher(const BT::Tree& tree, unsigned server_port)
     if(Groot2Publisher::used_ports.count(server_port) != 0 ||
        Groot2Publisher::used_ports.count(server_port + 1) != 0)
     {
-      auto msg = StrCat("Another instance of Groot2Publisher is using port ",
-                        std::to_string(server_port));
+      // Modified: Since both server_port and server_port+1 are used by the
+      // same server, error message should be updated to reflect this.
+      auto msg = "Another instance of Groot2Publisher is using port " +
+                  std::to_string(server_port) + " or " + std::to_string(server_port + 1);
+
+      msg += ". Used ports:";
+      for (auto port : Groot2Publisher::used_ports)
+      {
+        msg += " " + std::to_string(port);
+      }
+      
       throw LogicError(msg);
     }
     Groot2Publisher::used_ports.insert(server_port);
