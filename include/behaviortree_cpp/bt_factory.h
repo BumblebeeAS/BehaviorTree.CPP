@@ -94,7 +94,7 @@ constexpr const char* PLUGIN_SYMBOL = "BT_RegisterNodesFromPlugin";
 /* Use this macro to automatically register one or more custom Nodes
 * into a factory. For instance:
 *
-*   BT_REGISTER_NODES(factory)
+*   BT_REGISTER_NODES_WITH_NH(factory, nh, tf_buffer)
 *   {
 *     factory.registerNodeType<MoveBaseAction>("MoveBase");
 *   }
