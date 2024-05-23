@@ -91,7 +91,21 @@ inline TreeNodeManifest CreateManifest(const std::string& ID,
 constexpr const char* PLUGIN_SYMBOL = "BT_RegisterNodesFromPlugin";
 
 #ifdef BT_PLUGIN_EXPORT_WITH_NODEHANDLE
+/* Use this macro to automatically register one or more custom Nodes
+* into a factory. For instance:
+*
+*   BT_REGISTER_NODES(factory)
+*   {
+*     factory.registerNodeType<MoveBaseAction>("MoveBase");
+*   }
+*
+* IMPORTANT: this function MUST be declared in a cpp file, NOT a header file.
+* You must add the definition [BT_PLUGIN_EXPORT_WITH_NODEHANDLE] in CMakeLists.txt using:
+*
+*   target_compile_definitions(my_plugin_target PRIVATE  BT_PLUGIN_EXPORT_WITH_NODEHANDLE )
 
+* See examples in sample_nodes directory.
+*/
 #if defined(_WIN32)
 #define BTCPP_EXPORT_NH extern "C" __declspec(dllexport)
 #else
