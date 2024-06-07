@@ -49,14 +49,7 @@ Blackboard::getEntry(const std::string& key) const
   // special syntax: "@" will always refer to the root BB
   if(StartWith(key, '@'))
   {
-    if(auto parent = parent_bb_.lock())
-    {
-      return parent->getEntry(key);
-    }
-    else
-    {
-      return getEntry(key.substr(1, key.size() - 1));
-    }
+    return rootBlackboard()->getEntry(key.substr(1, key.size() - 1));
   }
 
   std::unique_lock<std::mutex> lock(mutex_);
@@ -150,14 +143,7 @@ void Blackboard::createEntry(const std::string& key, const TypeInfo& info)
 {
   if(StartWith(key, '@'))
   {
-    if(auto parent = parent_bb_.lock())
-    {
-      parent->createEntry(key, info);
-    }
-    else
-    {
-      createEntryImpl(key.substr(1, key.size() - 1), info);
-    }
+    rootBlackboard()->createEntryImpl(key.substr(1, key.size() - 1), info);
   }
   else
   {
@@ -316,6 +302,24 @@ Blackboard::Entry& Blackboard::Entry::operator=(const Entry& other)
   sequence_id = other.sequence_id;
   stamp = other.stamp;
   return *this;
+}
+
+Blackboard* BT::Blackboard::rootBlackboard()
+{
+  auto bb = static_cast<const Blackboard&>(*this).rootBlackboard();
+  return const_cast<Blackboard*>(bb);
+}
+
+const Blackboard* BT::Blackboard::rootBlackboard() const
+{
+  const Blackboard* bb = this;
+  Blackboard::Ptr prev = parent_bb_.lock();
+  while(prev)
+  {
+    bb = prev.get();
+    prev = bb->parent_bb_.lock();
+  }
+  return bb;
 }
 
 }  // namespace BT

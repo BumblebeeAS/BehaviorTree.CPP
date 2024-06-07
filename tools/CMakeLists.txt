@@ -25,10 +25,10 @@ include_directories(${PROJECT_SOURCE_DIR}/3rdparty
         ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(bt4_log_cat         bt_log_cat.cpp )
-target_link_libraries(bt4_log_cat  ${BTCPP_LIBRARY} )
-install(TARGETS bt4_log_cat
-        DESTINATION ${BTCPP_BIN_DESTINATION} )
+# add_executable(bt4_log_cat         bt_log_cat.cpp )
+# target_link_libraries(bt4_log_cat  ${BTCPP_LIBRARY} )
+# install(TARGETS bt4_log_cat
+#         DESTINATION ${BTCPP_BIN_DESTINATION} )
 
 if( ZMQ_FOUND )
     add_executable(bt4_recorder         bt_recorder.cpp )
