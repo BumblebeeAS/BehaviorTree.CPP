@@ -671,7 +671,8 @@ TreeNode::Ptr XMLParser::PImpl::createNodeFromXML(const XMLElement* element,
             {
               auto msg = StrCat("The port with name \"", port_name, "\" and value \"",
                                 port_value, "\" can not be converted to ",
-                                port_model.typeName());
+                                port_model.typeName(),
+                                ". Error message: ", ex.what());
               throw LogicError(msg);
             }
           }
